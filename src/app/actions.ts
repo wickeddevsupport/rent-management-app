@@ -27,6 +27,218 @@ function cycleStatus(balance: number) {
   return BillingStatus.PARTIAL;
 }
 
+async function buildBillingCycleForRoom({
+  roomId,
+  month,
+  year,
+  currentMeterReading,
+  adjustmentAmount,
+  note,
+  userId,
+}: {
+  roomId: string;
+  month: number;
+  year: number;
+  currentMeterReading: number;
+  adjustmentAmount: number;
+  note: string | null;
+  userId: string;
+}) {
+  const room = await db.room.findUnique({
+    where: { id: roomId },
+    include: {
+      property: true,
+      tenancies: { where: { isActive: true } },
+      billingCycles: { orderBy: [{ year: "desc" }, { month: "desc" }] },
+    },
+  });
+  if (!room) return null;
+
+  const exists = room.billingCycles.find((cycle) => cycle.month === month && cycle.year === year);
+  if (exists) {
+    return { room, cycle: exists, created: false };
+  }
+
+  const activeTenancy = room.tenancies[0] || null;
+  const lastCycle = room.billingCycles[0] || null;
+  const previousMeterReading = lastCycle ? lastCycle.currentMeterReading : activeTenancy?.startMeterReading || 0;
+  const openingBalance = lastCycle ? lastCycle.closingBalance : room.openingBalance;
+  const roomRentAmount = activeTenancy?.startRent ?? room.currentDefaultRent;
+  const waterAmount = activeTenancy?.startWater ?? room.currentDefaultWater;
+  const electricityUnits = Math.max(currentMeterReading - previousMeterReading, 0);
+  const electricityRate = room.property.defaultElectricityRate;
+  const electricityAmount = electricityUnits * electricityRate;
+  const grossTotal = openingBalance + roomRentAmount + waterAmount + electricityAmount + adjustmentAmount;
+  const creditAppliedAmount = Math.min(room.creditBalance, grossTotal);
+  const closingBalance = grossTotal - creditAppliedAmount;
+
+  const cycle = await db.billingCycle.create({
+    data: {
+      roomId,
+      tenancyId: activeTenancy?.id || null,
+      month,
+      year,
+      openingBalance,
+      roomRentAmount,
+      waterAmount,
+      previousMeterReading,
+      currentMeterReading,
+      electricityUnits,
+      electricityRate,
+      electricityAmount,
+      adjustmentAmount,
+      totalChargeAmount: grossTotal,
+      totalPaidAmount: 0,
+      closingBalance,
+      creditAppliedAmount,
+      status: cycleStatus(closingBalance),
+      notes: note,
+    },
+  });
+
+  if (creditAppliedAmount > 0) {
+    await db.room.update({ where: { id: roomId }, data: { creditBalance: room.creditBalance - creditAppliedAmount } });
+  }
+
+  await db.ledgerEntry.createMany({
+    data: [
+      { roomId, billingCycleId: cycle.id, createdByUserId: userId, entryType: "monthly_rent", amount: roomRentAmount, direction: "debit", description: `Room rent added for ${month}/${year}` },
+      { roomId, billingCycleId: cycle.id, createdByUserId: userId, entryType: "water_charge", amount: waterAmount, direction: "debit", description: `Water charge added for ${month}/${year}` },
+      { roomId, billingCycleId: cycle.id, createdByUserId: userId, entryType: "electricity_charge", amount: electricityAmount, direction: "debit", description: `${electricityUnits} units x ${electricityRate}` },
+      ...(creditAppliedAmount > 0 ? [{ roomId, billingCycleId: cycle.id, createdByUserId: userId, entryType: "credit_applied", amount: creditAppliedAmount, direction: "credit", description: "Advance credit applied" }] : []),
+    ],
+  });
+
+  return { room, cycle, created: true };
+}
+
+async function recordPaymentForRoom({
+  roomId,
+  amount,
+  paymentDate,
+  paymentMode,
+  referenceNote,
+  notes,
+  targetedCycleId,
+  userId,
+}: {
+  roomId: string;
+  amount: number;
+  paymentDate: Date;
+  paymentMode: PaymentMode;
+  referenceNote: string | null;
+  notes: string | null;
+  targetedCycleId?: string | null;
+  userId: string;
+}) {
+  const room = await db.room.findUnique({
+    where: { id: roomId },
+    include: {
+      tenancies: { where: { isActive: true } },
+      billingCycles: { where: { closingBalance: { gt: 0 } }, orderBy: [{ year: "asc" }, { month: "asc" }] },
+    },
+  });
+  if (!room) return null;
+
+  const payment = await db.payment.create({
+    data: {
+      roomId,
+      tenancyId: room.tenancies[0]?.id || null,
+      paymentDate,
+      amount,
+      paymentMode,
+      referenceNote,
+      notes,
+      enteredByUserId: userId,
+    },
+  });
+
+  const orderedCycles = [...room.billingCycles];
+  if (targetedCycleId) {
+    orderedCycles.sort((a, b) => {
+      if (a.id === targetedCycleId) return -1;
+      if (b.id === targetedCycleId) return 1;
+      return 0;
+    });
+  }
+
+  let remaining = amount;
+  let order = 1;
+  for (const cycle of orderedCycles) {
+    if (remaining <= 0) break;
+    const allocatable = Math.min(cycle.closingBalance, remaining);
+    if (allocatable <= 0) continue;
+    await db.paymentAllocation.create({
+      data: {
+        paymentId: payment.id,
+        billingCycleId: cycle.id,
+        allocatedAmount: allocatable,
+        allocationOrder: order++,
+      },
+    });
+    const newPaid = cycle.totalPaidAmount + allocatable;
+    const newClosing = Math.max(cycle.totalChargeAmount - cycle.creditAppliedAmount - newPaid, 0);
+    await db.billingCycle.update({
+      where: { id: cycle.id },
+      data: {
+        totalPaidAmount: newPaid,
+        closingBalance: newClosing,
+        status: newClosing <= 0 ? BillingStatus.PAID : BillingStatus.PARTIAL,
+      },
+    });
+    await db.ledgerEntry.create({
+      data: {
+        roomId,
+        billingCycleId: cycle.id,
+        paymentId: payment.id,
+        createdByUserId: userId,
+        entryType: "payment_allocation",
+        amount: allocatable,
+        direction: "credit",
+        description: `Payment allocated to ${cycle.month}/${cycle.year}`,
+      },
+    });
+    remaining -= allocatable;
+  }
+
+  if (remaining > 0) {
+    await db.room.update({ where: { id: roomId }, data: { creditBalance: room.creditBalance + remaining } });
+    await db.ledgerEntry.create({
+      data: {
+        roomId,
+        paymentId: payment.id,
+        createdByUserId: userId,
+        entryType: "advance_credit",
+        amount: remaining,
+        direction: "credit",
+        description: "Remaining payment stored as advance credit",
+      },
+    });
+  }
+
+  await db.ledgerEntry.create({
+    data: {
+      roomId,
+      paymentId: payment.id,
+      createdByUserId: userId,
+      entryType: "payment_received",
+      amount,
+      direction: "credit",
+      description: `Payment received via ${paymentMode}`,
+    },
+  });
+
+  const receipt = await db.receipt.create({
+    data: {
+      paymentId: payment.id,
+      receiptNumber: nextReceiptNumber(),
+      shareToken: randomUUID(),
+    },
+  });
+
+  return { room, payment, receipt };
+}
+
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") || "");
   const password = String(formData.get("password") || "");
@@ -154,73 +366,14 @@ export async function createBillingCycleAction(formData: FormData) {
   const adjustmentAmount = toNumber(formData.get("adjustmentAmount"));
   const note = String(formData.get("note") || "").trim() || null;
 
-  const room = await db.room.findUnique({
-    where: { id: roomId },
-    include: {
-      property: true,
-      tenancies: { where: { isActive: true } },
-      billingCycles: { orderBy: [{ year: "desc" }, { month: "desc" }] },
-    },
-  });
-  if (!room) redirect("/dashboard");
-
-  const exists = room.billingCycles.find((cycle) => cycle.month === month && cycle.year === year);
-  if (exists) redirect(`/rooms/${roomId}`);
-
-  const activeTenancy = room.tenancies[0] || null;
-  const lastCycle = room.billingCycles[0] || null;
-  const previousMeterReading = lastCycle ? lastCycle.currentMeterReading : activeTenancy?.startMeterReading || 0;
-  const openingBalance = lastCycle ? lastCycle.closingBalance : room.openingBalance;
-  const roomRentAmount = activeTenancy?.startRent ?? room.currentDefaultRent;
-  const waterAmount = activeTenancy?.startWater ?? room.currentDefaultWater;
-  const electricityUnits = Math.max(currentMeterReading - previousMeterReading, 0);
-  const electricityRate = room.property.defaultElectricityRate;
-  const electricityAmount = electricityUnits * electricityRate;
-  const grossTotal = openingBalance + roomRentAmount + waterAmount + electricityAmount + adjustmentAmount;
-  const creditAppliedAmount = Math.min(room.creditBalance, grossTotal);
-  const closingBalance = grossTotal - creditAppliedAmount;
-
-  const cycle = await db.billingCycle.create({
-    data: {
-      roomId,
-      tenancyId: activeTenancy?.id || null,
-      month,
-      year,
-      openingBalance,
-      roomRentAmount,
-      waterAmount,
-      previousMeterReading,
-      currentMeterReading,
-      electricityUnits,
-      electricityRate,
-      electricityAmount,
-      adjustmentAmount,
-      totalChargeAmount: grossTotal,
-      totalPaidAmount: 0,
-      closingBalance,
-      creditAppliedAmount,
-      status: cycleStatus(closingBalance),
-      notes: note,
-    },
-  });
-
-  if (creditAppliedAmount > 0) {
-    await db.room.update({ where: { id: roomId }, data: { creditBalance: room.creditBalance - creditAppliedAmount } });
-  }
-
-  await db.ledgerEntry.createMany({
-    data: [
-      { roomId, billingCycleId: cycle.id, createdByUserId: user.id, entryType: "monthly_rent", amount: roomRentAmount, direction: "debit", description: `Room rent added for ${month}/${year}` },
-      { roomId, billingCycleId: cycle.id, createdByUserId: user.id, entryType: "water_charge", amount: waterAmount, direction: "debit", description: `Water charge added for ${month}/${year}` },
-      { roomId, billingCycleId: cycle.id, createdByUserId: user.id, entryType: "electricity_charge", amount: electricityAmount, direction: "debit", description: `${electricityUnits} units x ${electricityRate}` },
-      ...(creditAppliedAmount > 0 ? [{ roomId, billingCycleId: cycle.id, createdByUserId: user.id, entryType: "credit_applied", amount: creditAppliedAmount, direction: "credit", description: "Advance credit applied" }] : []),
-    ],
-  });
+  const result = await buildBillingCycleForRoom({ roomId, month, year, currentMeterReading, adjustmentAmount, note, userId: user.id });
+  if (!result) redirect("/dashboard");
 
   revalidatePath(`/rooms/${roomId}`);
-  revalidatePath(`/properties/${room.propertyId}`);
+  revalidatePath(`/properties/${result.room.propertyId}`);
   revalidatePath("/dashboard");
-  redirect(`/rooms/${roomId}`);
+  const redirectTo = String(formData.get("redirectTo") || "").trim();
+  redirect(redirectTo || `/rooms/${roomId}`);
 }
 
 export async function addPaymentAction(formData: FormData) {
@@ -233,115 +386,71 @@ export async function addPaymentAction(formData: FormData) {
   const referenceNote = String(formData.get("referenceNote") || "").trim() || null;
   const notes = String(formData.get("notes") || "").trim() || null;
 
-  const room = await db.room.findUnique({
-    where: { id: roomId },
-    include: {
-      tenancies: { where: { isActive: true } },
-      billingCycles: { where: { closingBalance: { gt: 0 } }, orderBy: [{ year: "asc" }, { month: "asc" }] },
-    },
+  const result = await recordPaymentForRoom({
+    roomId,
+    amount,
+    paymentDate,
+    paymentMode,
+    referenceNote,
+    notes,
+    targetedCycleId,
+    userId: user.id,
   });
-  if (!room) redirect("/dashboard");
-
-  const payment = await db.payment.create({
-    data: {
-      roomId,
-      tenancyId: room.tenancies[0]?.id || null,
-      paymentDate,
-      amount,
-      paymentMode,
-      referenceNote,
-      notes,
-      enteredByUserId: user.id,
-    },
-  });
-
-  const orderedCycles = [...room.billingCycles];
-  if (targetedCycleId) {
-    orderedCycles.sort((a, b) => {
-      if (a.id === targetedCycleId) return -1;
-      if (b.id === targetedCycleId) return 1;
-      return 0;
-    });
-  }
-
-  let remaining = amount;
-  let order = 1;
-  for (const cycle of orderedCycles) {
-    if (remaining <= 0) break;
-    const allocatable = Math.min(cycle.closingBalance, remaining);
-    if (allocatable <= 0) continue;
-    await db.paymentAllocation.create({
-      data: {
-        paymentId: payment.id,
-        billingCycleId: cycle.id,
-        allocatedAmount: allocatable,
-        allocationOrder: order++,
-      },
-    });
-    const newPaid = cycle.totalPaidAmount + allocatable;
-    const newClosing = Math.max(cycle.totalChargeAmount - cycle.creditAppliedAmount - newPaid, 0);
-    await db.billingCycle.update({
-      where: { id: cycle.id },
-      data: {
-        totalPaidAmount: newPaid,
-        closingBalance: newClosing,
-        status: newClosing <= 0 ? BillingStatus.PAID : BillingStatus.PARTIAL,
-      },
-    });
-    await db.ledgerEntry.create({
-      data: {
-        roomId,
-        billingCycleId: cycle.id,
-        paymentId: payment.id,
-        createdByUserId: user.id,
-        entryType: "payment_allocation",
-        amount: allocatable,
-        direction: "credit",
-        description: `Payment allocated to ${cycle.month}/${cycle.year}`,
-      },
-    });
-    remaining -= allocatable;
-  }
-
-  if (remaining > 0) {
-    await db.room.update({ where: { id: roomId }, data: { creditBalance: room.creditBalance + remaining } });
-    await db.ledgerEntry.create({
-      data: {
-        roomId,
-        paymentId: payment.id,
-        createdByUserId: user.id,
-        entryType: "advance_credit",
-        amount: remaining,
-        direction: "credit",
-        description: "Remaining payment stored as advance credit",
-      },
-    });
-  }
-
-  await db.ledgerEntry.create({
-    data: {
-      roomId,
-      paymentId: payment.id,
-      createdByUserId: user.id,
-      entryType: "payment_received",
-      amount,
-      direction: "credit",
-      description: `Payment received via ${paymentMode}`,
-    },
-  });
-
-  const receipt = await db.receipt.create({
-    data: {
-      paymentId: payment.id,
-      receiptNumber: nextReceiptNumber(),
-      shareToken: randomUUID(),
-    },
-  });
+  if (!result) redirect("/dashboard");
 
   revalidatePath(`/rooms/${roomId}`);
   revalidatePath("/dashboard");
-  revalidatePath(`/receipts/${receipt.id}`);
-  redirect(`/receipts/${receipt.id}`);
+  revalidatePath(`/receipts/${result.receipt.id}`);
+  redirect(`/receipts/${result.receipt.id}`);
+}
+
+export async function collectRoomAction(formData: FormData) {
+  const user = await requireAdminUser();
+  const roomId = String(formData.get("roomId") || "");
+  const month = toNumber(formData.get("month"));
+  const year = toNumber(formData.get("year"));
+  const currentMeterReading = toNumber(formData.get("currentMeterReading"));
+  const adjustmentAmount = toNumber(formData.get("adjustmentAmount"));
+  const amountReceived = toNumber(formData.get("amountReceived"));
+  const paymentDate = toDate(formData.get("paymentDate"));
+  const paymentMode = (String(formData.get("paymentMode") || "CASH").toUpperCase() as PaymentMode);
+  const referenceNote = String(formData.get("referenceNote") || "").trim() || null;
+  const note = String(formData.get("note") || "").trim() || null;
+
+  const billingResult = await buildBillingCycleForRoom({
+    roomId,
+    month,
+    year,
+    currentMeterReading,
+    adjustmentAmount,
+    note,
+    userId: user.id,
+  });
+  if (!billingResult) redirect("/dashboard");
+
+  let receiptId: string | null = null;
+  if (amountReceived > 0) {
+    const paymentResult = await recordPaymentForRoom({
+      roomId,
+      amount: amountReceived,
+      paymentDate,
+      paymentMode,
+      referenceNote,
+      notes: note,
+      targetedCycleId: billingResult.cycle.id,
+      userId: user.id,
+    });
+    receiptId = paymentResult?.receipt.id || null;
+    if (receiptId) {
+      revalidatePath(`/receipts/${receiptId}`);
+    }
+  }
+
+  revalidatePath(`/rooms/${roomId}`);
+  revalidatePath(`/properties/${billingResult.room.propertyId}`);
+  revalidatePath("/properties");
+  revalidatePath("/dashboard");
+  redirect(`/rooms/${roomId}?saved=1${receiptId ? `&receiptId=${receiptId}` : ""}`);
 }
 
 export async function archiveRoomAction(formData: FormData) {

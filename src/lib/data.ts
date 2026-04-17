@@ -138,7 +138,15 @@ export async function getRoomDetail(roomId: string) {
   return db.room.findUnique({
     where: { id: roomId },
     include: {
-      property: true,
+      property: {
+        include: {
+          rooms: {
+            where: { status: { not: RoomStatus.ARCHIVED } },
+            orderBy: { roomNumber: "asc" },
+            select: { id: true },
+          },
+        },
+      },
       tenancies: { orderBy: { startDate: "desc" }, include: { tenant: true } },
       billingCycles: {
         orderBy: [{ year: "desc" }, { month: "desc" }],

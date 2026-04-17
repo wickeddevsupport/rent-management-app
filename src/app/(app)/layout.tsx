@@ -18,19 +18,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const editMode = await isEditMode();
 
   return (
-    <main className="min-h-screen py-6">
+    <main className="min-h-screen py-4 sm:py-6">
       <div className="page-shell space-y-6">
         <header className={`rounded-3xl border p-4 shadow-sm backdrop-blur ${editMode ? "border-amber-200 bg-amber-50/85" : "border-white/70 bg-white/80"}`}>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-semibold text-slate-950">Rent Management</h1>
                 {editMode ? <Badge tone="amber">Edit mode</Badge> : <Badge>View mode</Badge>}
               </div>
-              <p className="mt-1 text-sm text-slate-600">Clear property overview, room ledgers, monthly bills, and shareable receipts.</p>
+              <p className="mt-1 text-sm text-slate-600">Collector-first mobile flow, room by room or meter round first.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <NavLink href="/dashboard" label="Dashboard" />
               <NavLink href="/properties" label="Properties" />
               <NavLink href="/tenants" label="Tenants" />
               <NavLink href="/settings" label="Settings" />
@@ -42,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               {user.role === "ADMIN" ? (
                 <form action={toggleModeAction}>
                   <input type="hidden" name="mode" value={editMode ? "view" : "edit"} />
-                  <input type="hidden" name="redirectTo" value="/dashboard" />
+                  <input type="hidden" name="redirectTo" value="/properties" />
                   {editMode ? <SoftButton type="submit">Switch to view</SoftButton> : <Button type="submit">Enable edit</Button>}
                 </form>
               ) : null}
