@@ -50,34 +50,34 @@ export default async function RoomDetailPage({
 
   return (
     <div className="space-y-6">
-      <section className="listing-hero overflow-hidden rounded-[32px] p-6 text-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.8)] sm:p-8">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+      <section className="listing-hero overflow-hidden rounded-[36px] p-6 text-white sm:p-8 lg:p-10">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">Unit detail</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{room.property.name} · Room {room.roomNumber}</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base">
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
               {activeTenancy ? `${activeTenancy.tenant.fullName} · ${activeTenancy.tenant.phone || "No phone added"}` : "Vacant right now. Start a tenancy when someone moves in."}
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-2">
               <Badge tone={roomStatusTone(room.status)}>{room.status.toLowerCase()}</Badge>
               <Badge tone={totalDue > 0 ? "red" : "green"}>{totalDue > 0 ? "Needs collection" : "Account settled"}</Badge>
               <Badge tone="blue">{bsMonth}</Badge>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
+            <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Due now</p>
               <p className="mt-2 text-xl font-semibold text-white">{money(totalDue)}</p>
             </div>
-            <div className="rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+            <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Advance</p>
               <p className="mt-2 text-xl font-semibold text-white">{money(credit)}</p>
             </div>
-            <div className="rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+            <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Current number</p>
               <p className="mt-2 text-xl font-semibold text-white">{liveElectricityNumber}</p>
             </div>
-            <div className="rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+            <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
               <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Next</p>
               <p className="mt-2 text-sm font-semibold text-white">{nextRoomId ? "Next room ready" : "Back to building"}</p>
             </div>
@@ -87,13 +87,13 @@ export default async function RoomDetailPage({
 
       <PageHeader
         title="Collection surface"
-        subtitle="This room now behaves more like a real unit detail: resident, utility baseline, amount due, and one dominant collection action."
+        subtitle="Resident state, utility baseline, due amount, and the primary collection action — all kept on one cleaner unit page."
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Link href={`/properties/${room.propertyId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold !text-slate-800 transition hover:bg-slate-50 hover:!text-slate-800">
+            <Link href={`/properties/${room.propertyId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold !text-slate-900 transition hover:bg-slate-50 hover:!text-slate-900">
               Back to units
             </Link>
-            <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-semibold !text-white transition hover:bg-slate-800 hover:!text-white">
+            <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-950/90 bg-slate-950 px-4 text-sm font-semibold !text-white transition hover:bg-slate-800 hover:!text-white">
               {nextRoomId ? "Next room" : "Back to building"}
             </Link>
           </div>
@@ -135,8 +135,8 @@ export default async function RoomDetailPage({
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Collect for this unit</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">One clean action surface</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Meter, payment, correction, and notes stay together so the collector never has to hunt around.</p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Collect without the clutter</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Meter, payment, correction, and visit note stay together so the collector can finish the room in one pass.</p>
                 </div>
                 <div className="rounded-3xl bg-slate-950 px-4 py-3 !text-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">Amount due</p>
@@ -227,7 +227,7 @@ export default async function RoomDetailPage({
                     <div className="rounded-3xl border border-slate-200 bg-slate-950 p-4 !text-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Primary action</p>
                       <p className="mt-2 text-lg font-semibold text-white">Save collection for this unit</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-300">If payment is entered, a receipt is created immediately. If amount is 0, only the bill is saved.</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-300">Add payment to create a receipt immediately. Enter 0 to save the bill first and collect later.</p>
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                         <Button type="submit" variant="inverse" className="flex-1">Save collection</Button>
                         <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-700 px-4 text-sm font-semibold !text-white transition hover:bg-slate-900 hover:!text-white">
