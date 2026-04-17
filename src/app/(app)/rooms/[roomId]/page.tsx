@@ -229,7 +229,7 @@ export default async function RoomDetailPage({
                       <p className="mt-2 text-lg font-semibold text-white">Save collection for this unit</p>
                       <p className="mt-2 text-sm leading-6 text-slate-300">If payment is entered, a receipt is created immediately. If amount is 0, only the bill is saved.</p>
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                        <Button type="submit" className="flex-1 bg-white !text-slate-950 hover:bg-slate-100">Save collection</Button>
+                        <Button type="submit" variant="inverse" className="flex-1">Save collection</Button>
                         <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-700 px-4 text-sm font-semibold !text-white transition hover:bg-slate-900 hover:!text-white">
                           {nextRoomId ? "Skip to next room" : "Back to building"}
                         </Link>
@@ -361,7 +361,7 @@ export default async function RoomDetailPage({
               <SectionTitle title="Archive unit" subtitle="No hard delete. History stays intact." />
               <form action={archiveRoomAction}>
                 <input type="hidden" name="roomId" value={room.id} />
-                <Button type="submit" className="w-full bg-rose-600 !text-white hover:bg-rose-500">Archive room</Button>
+                <Button type="submit" variant="danger" className="w-full">Archive room</Button>
               </form>
             </Card>
           ) : null}

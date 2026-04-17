@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { cn } from "@/lib/format";
 
+type ButtonVariant = "primary" | "secondary" | "inverse" | "glass" | "danger";
+
+const buttonVariantClass: Record<ButtonVariant, string> = {
+  primary: "border border-slate-950/90 bg-slate-950 !text-white hover:bg-slate-800 hover:!text-white",
+  secondary: "border border-slate-200 bg-white !text-slate-900 hover:bg-slate-50 hover:!text-slate-900",
+  inverse: "border border-white/20 bg-white !text-slate-950 hover:bg-slate-100 hover:!text-slate-950",
+  glass: "border border-white/15 bg-white/10 !text-white hover:bg-white/15 hover:!text-white",
+  danger: "border border-rose-600 bg-rose-600 !text-white hover:bg-rose-500 hover:!text-white",
+};
+
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-4 rounded-[28px] border border-slate-200/80 bg-white/92 p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.35)] backdrop-blur sm:flex-row sm:items-end sm:justify-between">
+    <div className="premium-panel flex flex-col gap-4 rounded-[28px] p-6 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Rent management</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{title}</h1>
@@ -15,18 +25,18 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
 }
 
 export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("rounded-[28px] border border-slate-200/80 bg-white/94 p-5 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.35)]", className)}>{children}</div>;
+  return <div className={cn("premium-panel rounded-[28px] p-5", className)}>{children}</div>;
 }
 
 export function StatCard({ label, value, help, tone = "default" }: { label: string; value: string; help?: string; tone?: "default" | "danger" | "success" | "info" }) {
   const toneClass = {
-    default: "from-white to-slate-50",
-    danger: "from-rose-50 to-white",
-    success: "from-emerald-50 to-white",
-    info: "from-blue-50 to-white",
+    default: "stat-card",
+    danger: "stat-card stat-card-danger",
+    success: "stat-card stat-card-success",
+    info: "stat-card stat-card-info",
   }[tone];
   return (
-    <Card className={`bg-gradient-to-br ${toneClass}`}>
+    <Card className={toneClass}>
       <p className="text-sm font-medium text-slate-500">{label}</p>
       <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">{value}</p>
       {help ? <p className="mt-2 text-xs leading-5 text-slate-500">{help}</p> : null}
@@ -88,17 +98,17 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return <select {...props} className={cn("h-12 rounded-2xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-950 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100", props.className)} />;
 }
 
-export function Button({ className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button {...props} className={cn("inline-flex h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-semibold !text-white shadow-[0_18px_40px_-24px_rgba(15,23,42,0.9)] transition hover:bg-slate-800 hover:!text-white disabled:opacity-50", className)} />;
+export function Button({ className, variant = "primary", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
+  return <button {...props} className={cn("inline-flex h-12 items-center justify-center rounded-2xl px-4 text-sm font-semibold shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] transition disabled:opacity-50", buttonVariantClass[variant], className)} />;
 }
 
 export function SoftButton({ className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button {...props} className={cn("inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold !text-slate-800 transition hover:bg-slate-50 hover:!text-slate-800", className)} />;
+  return <Button {...props} variant="secondary" className={className} />;
 }
 
-export function LinkButton({ href, children }: { href: string; children: React.ReactNode }) {
+export function LinkButton({ href, children, variant = "primary", className }: { href: string; children: React.ReactNode; variant?: ButtonVariant; className?: string }) {
   return (
-    <Link href={href} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-semibold !text-white shadow-[0_18px_40px_-24px_rgba(15,23,42,0.9)] transition hover:bg-slate-800 hover:!text-white">
+    <Link href={href} className={cn("inline-flex h-12 items-center justify-center rounded-2xl px-4 text-sm font-semibold shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] transition", buttonVariantClass[variant], className)}>
       {children}
     </Link>
   );
