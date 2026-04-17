@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  VIEWER
+}
+
+enum RoomStatus {
+  OCCUPIED
+  VACANT
+  BLOCKED
+  ARCHIVED
+}
+
+enum BillingStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  CREDIT
+}
+
+enum PaymentMode {
+  CASH
+  BANK
+  ESEWA
+  KHALTI
+  OTHER
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         UserRole      @default(VIEWER)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  payments     Payment[]     @relation("PaymentEnteredBy")
+  ledgerEntries LedgerEntry[] @relation("LedgerCreatedBy")
+}
+
+model Property {
+  id                     String   @id @default(cuid())
+  name                   String
+  code                   String?
+  address                String?
+  defaultElectricityRate Float    @default(0)
+  isActive               Boolean  @default(true)
+  notes                  String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  rooms                  Room[]
+}
+
+model Room {
+  id                 String        @id @default(cuid())
+  propertyId         String
+  property           Property      @relation(fields: [propertyId], references: [id])
+  roomNumber         String
+  roomLabel          String?
+  currentDefaultRent Float         @default(0)
+  currentDefaultWater Float        @default(0)
+  meterLabel         String?
+  status             RoomStatus    @default(VACANT)
+  openingBalance     Float         @default(0)
+  creditBalance      Float         @default(0)
+  notes              String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  tenancies          Tenancy[]
+  billingCycles      BillingCycle[]
+  payments           Payment[]
+  ledgerEntries      LedgerEntry[]
+
+  @@unique([propertyId, roomNumber])
+}
+
+model Tenant {
+  id               String    @id @default(cuid())
+  fullName         String
+  phone            String?
+  idNumber         String?
+  permanentAddress String?
+  emergencyContact String?
+  notes            String?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  tenancies        Tenancy[]
+}
+
+model Tenancy {
+  id                String         @id @default(cuid())
+  roomId            String
+  tenantId          String
+  room              Room           @relation(fields: [roomId], references: [id])
+  tenant            Tenant         @relation(fields: [tenantId], references: [id])
+  startDate         DateTime
+  endDate           DateTime?
+  startRent         Float
+  startWater        Float
+  startMeterReading Float          @default(0)
+  isActive          Boolean        @default(true)
+  moveInNotes       String?
+  moveOutNotes      String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  billingCycles     BillingCycle[]
+  payments          Payment[]
+}
+
+model BillingCycle {
+  id                   String              @id @default(cuid())
+  roomId               String
+  tenancyId            String?
+  room                 Room                @relation(fields: [roomId], references: [id])
+  tenancy              Tenancy?            @relation(fields: [tenancyId], references: [id])
+  month                Int
+  year                 Int
+  openingBalance       Float               @default(0)
+  roomRentAmount       Float               @default(0)
+  waterAmount          Float               @default(0)
+  previousMeterReading Float               @default(0)
+  currentMeterReading  Float               @default(0)
+  electricityUnits     Float               @default(0)
+  electricityRate      Float               @default(0)
+  electricityAmount    Float               @default(0)
+  adjustmentAmount     Float               @default(0)
+  totalChargeAmount    Float               @default(0)
+  totalPaidAmount      Float               @default(0)
+  closingBalance       Float               @default(0)
+  creditAppliedAmount  Float               @default(0)
+  status               BillingStatus       @default(UNPAID)
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  paymentAllocations   PaymentAllocation[]
+  ledgerEntries        LedgerEntry[]
+
+  @@unique([roomId, month, year])
+}
+
+model Payment {
+  id              String              @id @default(cuid())
+  roomId          String
+  tenancyId       String?
+  room            Room                @relation(fields: [roomId], references: [id])
+  tenancy         Tenancy?            @relation(fields: [tenancyId], references: [id])
+  paymentDate     DateTime
+  amount          Float
+  paymentMode     PaymentMode         @default(CASH)
+  referenceNote   String?
+  enteredByUserId String
+  enteredByUser   User                @relation("PaymentEnteredBy", fields: [enteredByUserId], references: [id])
+  notes           String?
+  isArchived      Boolean             @default(false)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  allocations     PaymentAllocation[]
+  receipt         Receipt?
+  ledgerEntries   LedgerEntry[]
+}
+
+model PaymentAllocation {
+  id             String       @id @default(cuid())
+  paymentId      String
+  billingCycleId String
+  payment        Payment      @relation(fields: [paymentId], references: [id])
+  billingCycle   BillingCycle @relation(fields: [billingCycleId], references: [id])
+  allocatedAmount Float
+  allocationOrder Int
+  createdAt      DateTime     @default(now())
+}
+
+model Receipt {
+  id            String   @id @default(cuid())
+  paymentId      String   @unique
+  payment        Payment  @relation(fields: [paymentId], references: [id])
+  receiptNumber  String   @unique
+  shareToken     String   @unique
+  createdAt      DateTime @default(now())
+}
+
+model LedgerEntry {
+  id              String        @id @default(cuid())
+  roomId          String
+  billingCycleId  String?
+  paymentId       String?
+  room            Room          @relation(fields: [roomId], references: [id])
+  billingCycle    BillingCycle? @relation(fields: [billingCycleId], references: [id])
+  payment         Payment?      @relation(fields: [paymentId], references: [id])
+  entryType       String
+  amount          Float
+  direction       String
+  description     String
+  metadataJson    String?
+  createdAt       DateTime      @default(now())
+  createdByUserId String?
+  createdByUser   User?         @relation("LedgerCreatedBy", fields: [createdByUserId], references: [id])
+}
