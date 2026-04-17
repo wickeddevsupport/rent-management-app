@@ -16,7 +16,7 @@ function roomStateLabel(room: PropertyRoom) {
   if (room.needsReading) return { label: "Need reading", tone: "amber" as const };
   if (room.totalDue <= 0) return { label: "Paid", tone: "green" as const };
   if (room.currentCycle?.totalPaidAmount && room.currentCycle.totalPaidAmount > 0) return { label: "Partial", tone: "blue" as const };
-  return { label: "Bill ready", tone: "red" as const };
+  return { label: "Ready for collection", tone: "red" as const };
 }
 
 export default async function PropertyDetailPage({ params }: { params: Promise<{ propertyId: string }> }) {
@@ -33,76 +33,123 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-6">
+      <section className="listing-hero overflow-hidden rounded-[32px] p-6 text-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.8)] sm:p-8">
+        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">Building view</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{property.name}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base">{property.address || "Property address not added yet"}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Badge tone="blue">{bsMonth}</Badge>
+              <Badge tone={pendingReadings > 0 ? "amber" : totalDue > 0 ? "red" : "green"}>
+                {pendingReadings > 0 ? `${pendingReadings} readings pending` : totalDue > 0 ? "Collection pending" : "Month under control"}
+              </Badge>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Units</p>
+              <p className="mt-2 text-xl font-semibold text-white">{property.rooms.length}</p>
+            </div>
+            <div className="rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Occupied</p>
+              <p className="mt-2 text-xl font-semibold text-white">{occupied}</p>
+            </div>
+            <div className="rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Due now</p>
+              <p className="mt-2 text-xl font-semibold text-white">{money(totalDue)}</p>
+            </div>
+            <div className="rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Collected</p>
+              <p className="mt-2 text-xl font-semibold text-white">{money(collected)}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <PageHeader
-        title={property.name}
-        subtitle={`${property.address || "Property collection screen"} · ${bsMonth}`}
+        title="Units"
+        subtitle="See the building like a real unit list: occupancy, resident, due amount, and latest movement all at a glance."
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Link href={`/properties/${property.id}/meter-round`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-medium !text-white transition hover:bg-slate-800">
               Meter round
             </Link>
             <Link href="/properties" className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium !text-slate-800 transition hover:bg-slate-200">
-              Back to properties
+              Back to portfolio
             </Link>
           </div>
         }
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Occupied rooms" value={String(occupied)} />
-        <StatCard label="Need reading" value={String(pendingReadings)} tone={pendingReadings ? "info" : "default"} />
+        <StatCard label="Occupied units" value={String(occupied)} />
+        <StatCard label="Readings pending" value={String(pendingReadings)} tone={pendingReadings ? "info" : "default"} />
         <StatCard label="Due now" value={money(totalDue)} tone={totalDue > 0 ? "danger" : "success"} />
         <StatCard label="Collected" value={money(collected)} tone="success" />
       </section>
 
-      <Card>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-950">Rooms</h2>
-            <p className="text-sm text-slate-500">Tap one room, collect, confirm, move to the next.</p>
-          </div>
-          <Badge tone="blue">Rate {property.defaultElectricityRate}/unit</Badge>
-        </div>
-
-        <div className="space-y-3">
-          {property.rooms.length ? (
-            property.rooms.map((room) => {
-              const state = roomStateLabel(room);
-              return (
-                <Link key={room.id} href={`/rooms/${room.id}`} className="block rounded-3xl border border-slate-100 p-4 transition hover:border-slate-200 hover:bg-slate-50">
-                  <div className="flex items-start justify-between gap-3">
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+        {property.rooms.length ? (
+          property.rooms.map((room) => {
+            const state = roomStateLabel(room);
+            return (
+              <Link key={room.id} href={`/rooms/${room.id}`} className="group block">
+                <article className="unit-card rounded-[30px] p-5 transition duration-200 group-hover:-translate-y-0.5 sm:p-6">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-semibold text-slate-900">Room {room.roomNumber}</h3>
-                        <Badge tone={state.tone}>{state.label}</Badge>
-                      </div>
-                      <p className="mt-1 text-sm text-slate-500">{room.activeTenancy?.tenant.fullName || "No active tenant"}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Unit</p>
+                      <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Room {room.roomNumber}</h3>
+                      <p className="mt-2 text-sm text-slate-500">{room.activeTenancy?.tenant.fullName || "Vacant right now"}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs uppercase tracking-wide text-slate-400">Due</p>
-                      <p className="text-lg font-semibold text-slate-950">{money(room.totalDue)}</p>
+                    <Badge tone={state.tone}>{state.label}</Badge>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <div className="rounded-3xl bg-slate-50 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Due now</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-950">{money(room.totalDue)}</p>
+                    </div>
+                    <div className="rounded-3xl bg-slate-50 p-4">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Rent + water</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-950">{money(room.currentDefaultRent + room.currentDefaultWater)}</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-sm text-slate-600 sm:grid-cols-4">
-                    <div><span className="block text-xs uppercase tracking-wide text-slate-400">Rent</span>{money(room.currentDefaultRent)}</div>
-                    <div><span className="block text-xs uppercase tracking-wide text-slate-400">Water</span>{money(room.currentDefaultWater)}</div>
-                    <div><span className="block text-xs uppercase tracking-wide text-slate-400">Meter</span>{room.currentCycle ? `${room.currentCycle.previousMeterReading} → ${room.currentCycle.currentMeterReading}` : "Not entered"}</div>
-                    <div><span className="block text-xs uppercase tracking-wide text-slate-400">Last payment</span>{room.latestPayment ? shortDate(room.latestPayment.paymentDate) : "—"}</div>
+                  <div className="mt-4 space-y-2 text-sm text-slate-600">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Electricity number</span>
+                      <span className="font-medium text-slate-900">{room.currentCycle ? `${room.currentCycle.previousMeterReading} → ${room.currentCycle.currentMeterReading}` : "Not entered"}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Last payment</span>
+                      <span className="font-medium text-slate-900">{room.latestPayment ? shortDate(room.latestPayment.paymentDate) : "—"}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-500">Status</span>
+                      <span className="font-medium text-slate-900">{room.status.toLowerCase()}</span>
+                    </div>
                   </div>
-                </Link>
-              );
-            })
-          ) : (
+
+                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm">
+                    <span className="text-slate-500">Open unit</span>
+                    <span className="rounded-full bg-slate-950 px-4 py-2 font-semibold text-white">View room</span>
+                  </div>
+                </article>
+              </Link>
+            );
+          })
+        ) : (
+          <div className="md:col-span-2 2xl:col-span-3">
             <EmptyState title="No rooms yet" text="Create the first room for this property in edit mode." />
-          )}
-        </div>
-      </Card>
+          </div>
+        )}
+      </div>
 
       {editMode ? (
-        <Card>
+        <Card className="listing-card">
           <h2 className="text-lg font-semibold text-slate-950">Add room</h2>
-          <p className="mt-1 text-sm text-slate-500">Setup stays here, away from daily collection.</p>
+          <p className="mt-1 text-sm text-slate-500">New units stay in setup, away from the live monthly flow.</p>
           <form action={createRoomAction} className="mt-4 space-y-3">
             <input type="hidden" name="propertyId" value={property.id} />
             <div className="grid gap-3 md:grid-cols-2">
