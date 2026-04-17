@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { archiveRoomAction, collectRoomAction, endTenancyAction, startTenancyAction } from "@/app/actions";
+import { archiveRoomAction, collectRoomAction, endTenancyAction, startTenancyAction, updateRoomAction, updateTenantAction } from "@/app/actions";
 import { BsDateInput } from "@/components/bs-date-input";
 import { Badge, Button, Card, EmptyState, Field, LinkButton, PageHeader, SectionTitle, SegmentedTabs, Select, StatCard, TextArea, TextInput } from "@/components/ui";
 import { isEditMode } from "@/lib/auth";
@@ -344,13 +344,80 @@ export default async function RoomDetailPage({
 
       {currentTab === "manage" ? (
         <div className="grid gap-6 xl:grid-cols-[1fr,0.78fr]">
-          <Card className="listing-card">
-            <SectionTitle
-              title={activeTenancy ? "End tenancy" : "Start tenancy"}
-              subtitle={activeTenancy ? "Mark the unit vacant when someone moves out." : "Attach a resident and initialize this unit from its real current state."}
-            />
-            {editMode ? (
-              activeTenancy ? (
+          <div className="space-y-6">
+            <Card className="listing-card">
+              <SectionTitle
+                title={activeTenancy ? "Edit resident" : "Start tenancy"}
+                subtitle={activeTenancy ? "Update resident details and current tenancy baseline." : "Attach a resident and initialize this unit from its real current state."}
+              />
+              {editMode ? (
+                activeTenancy ? (
+                  <form action={updateTenantAction} className="space-y-3">
+                    <input type="hidden" name="roomId" value={room.id} />
+                    <input type="hidden" name="tenantId" value={activeTenancy.tenant.id} />
+                    <input type="hidden" name="tenancyId" value={activeTenancy.id} />
+                    <Field label="Tenant name"><TextInput name="fullName" required defaultValue={activeTenancy.tenant.fullName} /></Field>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Field label="Phone"><TextInput name="phone" defaultValue={activeTenancy.tenant.phone || ""} /></Field>
+                      <Field label="ID / citizenship"><TextInput name="idNumber" defaultValue={activeTenancy.tenant.idNumber || ""} /></Field>
+                    </div>
+                    <Field label="Permanent address"><TextInput name="permanentAddress" defaultValue={activeTenancy.tenant.permanentAddress || ""} /></Field>
+                    <Field label="Emergency contact"><TextInput name="emergencyContact" defaultValue={activeTenancy.tenant.emergencyContact || ""} /></Field>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Field label="Rent"><TextInput name="startRent" type="number" step="0.01" defaultValue={activeTenancy.startRent} required /></Field>
+                      <Field label="Water"><TextInput name="startWater" type="number" step="0.01" defaultValue={activeTenancy.startWater} required /></Field>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Field label="Joined on"><BsDateInput name="startDate" defaultValue={activeTenancy.startDate} required /></Field>
+                      <Field label="Move-in meter number"><TextInput name="startMeterReading" type="number" step="0.01" defaultValue={activeTenancy.startMeterReading} required /></Field>
+                    </div>
+                    <Field label="Move in note"><TextArea name="moveInNotes" defaultValue={activeTenancy.moveInNotes || ""} placeholder="Optional move-in note" /></Field>
+                    <Field label="Tenant note"><TextArea name="tenantNotes" defaultValue={activeTenancy.tenant.notes || ""} placeholder="Optional note about this resident" /></Field>
+                    <Button type="submit" className="w-full">Save resident</Button>
+                  </form>
+                ) : (
+                  <form action={startTenancyAction} className="space-y-3">
+                    <input type="hidden" name="roomId" value={room.id} />
+                    <Field label="Tenant name"><TextInput name="fullName" required /></Field>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Field label="Phone"><TextInput name="phone" /></Field>
+                      <Field label="ID / citizenship"><TextInput name="idNumber" /></Field>
+                    </div>
+                    <Field label="Permanent address"><TextInput name="permanentAddress" /></Field>
+                    <Field label="Emergency contact"><TextInput name="emergencyContact" /></Field>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <Field label="Rent"><TextInput name="startRent" type="number" step="0.01" defaultValue={room.currentDefaultRent} required /></Field>
+                      <Field label="Water"><TextInput name="startWater" type="number" step="0.01" defaultValue={room.currentDefaultWater} required /></Field>
+                    </div>
+                    <div className="surface-subtle rounded-3xl p-4">
+                      <h3 className="text-base font-semibold text-slate-950">Current starting point</h3>
+                      <p className="mt-1 text-sm text-slate-500">Use the resident’s live situation today so the app can continue from the real state.</p>
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <Field label="Joined on"><BsDateInput name="startDate" defaultValue={new Date()} required /></Field>
+                        <Field label="Current electricity number" hint="Use the live number today. Future collections continue from here.">
+                          <TextInput name="startMeterReading" type="number" step="0.01" defaultValue={currentCycle?.currentMeterReading ?? 0} required />
+                        </Field>
+                        <Field label="Current due already pending" hint="Any unpaid amount that exists before the first collection in this app.">
+                          <TextInput name="openingBalance" type="number" step="0.01" defaultValue={room.openingBalance} />
+                        </Field>
+                        <Field label="Advance already with us" hint="If the resident already has advance/credit, enter it here.">
+                          <TextInput name="advanceBalance" type="number" step="0.01" defaultValue={room.creditBalance} />
+                        </Field>
+                      </div>
+                    </div>
+                    <Field label="Move in note"><TextArea name="moveInNotes" placeholder="Optional move-in note" /></Field>
+                    <Field label="Tenant note"><TextArea name="tenantNotes" placeholder="Optional note about this resident" /></Field>
+                    <Button type="submit" className="w-full">Start tenancy</Button>
+                  </form>
+                )
+              ) : (
+                <EmptyState title="View mode is on" text="Switch to edit mode when you want to update tenancy details." />
+              )}
+            </Card>
+
+            {activeTenancy && editMode ? (
+              <Card className="listing-card">
+                <SectionTitle title="End tenancy" subtitle="Mark the unit vacant when someone moves out." />
                 <form action={endTenancyAction} className="space-y-3">
                   <input type="hidden" name="roomId" value={room.id} />
                   <input type="hidden" name="tenancyId" value={activeTenancy.id} />
@@ -358,47 +425,33 @@ export default async function RoomDetailPage({
                   <Field label="Move out note"><TextArea name="moveOutNotes" placeholder="Optional closing note" /></Field>
                   <Button type="submit" className="w-full">End tenancy</Button>
                 </form>
-              ) : (
-                <form action={startTenancyAction} className="space-y-3">
-                  <input type="hidden" name="roomId" value={room.id} />
-                  <Field label="Tenant name"><TextInput name="fullName" required /></Field>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <Field label="Phone"><TextInput name="phone" /></Field>
-                    <Field label="ID / citizenship"><TextInput name="idNumber" /></Field>
-                  </div>
-                  <Field label="Permanent address"><TextInput name="permanentAddress" /></Field>
-                  <Field label="Emergency contact"><TextInput name="emergencyContact" /></Field>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <Field label="Rent"><TextInput name="startRent" type="number" step="0.01" defaultValue={room.currentDefaultRent} required /></Field>
-                    <Field label="Water"><TextInput name="startWater" type="number" step="0.01" defaultValue={room.currentDefaultWater} required /></Field>
-                  </div>
-                  <div className="surface-subtle rounded-3xl p-4">
-                    <h3 className="text-base font-semibold text-slate-950">Current starting point</h3>
-                    <p className="mt-1 text-sm text-slate-500">Use the resident’s live situation today so the app can continue from the real state.</p>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      <Field label="Joined on"><BsDateInput name="startDate" defaultValue={new Date()} required /></Field>
-                      <Field label="Current electricity number" hint="Use the live number today. Future collections continue from here.">
-                        <TextInput name="startMeterReading" type="number" step="0.01" defaultValue={currentCycle?.currentMeterReading ?? 0} required />
-                      </Field>
-                      <Field label="Current due already pending" hint="Any unpaid amount that exists before the first collection in this app.">
-                        <TextInput name="openingBalance" type="number" step="0.01" defaultValue={room.openingBalance} />
-                      </Field>
-                      <Field label="Advance already with us" hint="If the resident already has advance/credit, enter it here.">
-                        <TextInput name="advanceBalance" type="number" step="0.01" defaultValue={room.creditBalance} />
-                      </Field>
-                    </div>
-                  </div>
-                  <Field label="Move in note"><TextArea name="moveInNotes" placeholder="Optional move-in note" /></Field>
-                  <Field label="Tenant note"><TextArea name="tenantNotes" placeholder="Optional note about this resident" /></Field>
-                  <Button type="submit" className="w-full">Start tenancy</Button>
-                </form>
-              )
-            ) : (
-              <EmptyState title="View mode is on" text="Switch to edit mode when you want to update tenancy details." />
-            )}
-          </Card>
+              </Card>
+            ) : null}
+          </div>
 
           <div className="space-y-6">
+            <Card className="listing-card">
+              <SectionTitle title="Edit room" subtitle="Update unit defaults and display details." />
+              {editMode ? (
+                <form action={updateRoomAction} className="space-y-3">
+                  <input type="hidden" name="roomId" value={room.id} />
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <Field label="Room number"><TextInput name="roomNumber" required defaultValue={room.roomNumber} /></Field>
+                    <Field label="Label"><TextInput name="roomLabel" defaultValue={room.roomLabel || ""} /></Field>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <Field label="Default rent"><TextInput name="currentDefaultRent" type="number" step="0.01" required defaultValue={room.currentDefaultRent} /></Field>
+                    <Field label="Default water"><TextInput name="currentDefaultWater" type="number" step="0.01" required defaultValue={room.currentDefaultWater} /></Field>
+                  </div>
+                  <Field label="Meter label"><TextInput name="meterLabel" defaultValue={room.meterLabel || ""} /></Field>
+                  <Field label="Notes"><TextArea name="notes" defaultValue={room.notes || ""} placeholder="Optional room notes" /></Field>
+                  <Button type="submit" className="w-full">Save room</Button>
+                </form>
+              ) : (
+                <EmptyState title="Edit mode is off" text="Turn on edit mode to update room details." />
+              )}
+            </Card>
+
             <Card className="listing-card">
               <SectionTitle title="Actions" subtitle="Archive and tenancy changes." />
               {editMode ? (

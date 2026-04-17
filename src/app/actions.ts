@@ -307,6 +307,88 @@ export async function createRoomAction(formData: FormData) {
   redirect(`/properties/${propertyId}`);
 }
 
+export async function updatePropertyAction(formData: FormData) {
+  await requireAdminUser();
+  const propertyId = String(formData.get("propertyId") || "");
+  await db.property.update({
+    where: { id: propertyId },
+    data: {
+      name: String(formData.get("name") || "").trim(),
+      code: String(formData.get("code") || "").trim() || null,
+      address: String(formData.get("address") || "").trim() || null,
+      defaultElectricityRate: toNumber(formData.get("defaultElectricityRate")),
+      notes: String(formData.get("notes") || "").trim() || null,
+    },
+  });
+  revalidatePath(`/properties/${propertyId}`);
+  revalidatePath("/properties");
+  revalidatePath("/dashboard");
+  redirect(`/properties/${propertyId}`);
+}
+
+export async function updateRoomAction(formData: FormData) {
+  await requireAdminUser();
+  const roomId = String(formData.get("roomId") || "");
+  const room = await db.room.findUnique({ where: { id: roomId } });
+  if (!room) redirect("/dashboard");
+
+  await db.room.update({
+    where: { id: roomId },
+    data: {
+      roomNumber: String(formData.get("roomNumber") || "").trim(),
+      roomLabel: String(formData.get("roomLabel") || "").trim() || null,
+      currentDefaultRent: toNumber(formData.get("currentDefaultRent"), room.currentDefaultRent),
+      currentDefaultWater: toNumber(formData.get("currentDefaultWater"), room.currentDefaultWater),
+      meterLabel: String(formData.get("meterLabel") || "").trim() || null,
+      notes: String(formData.get("notes") || "").trim() || null,
+    },
+  });
+
+  revalidatePath(`/rooms/${roomId}`);
+  revalidatePath(`/properties/${room.propertyId}`);
+  revalidatePath("/properties");
+  revalidatePath("/dashboard");
+  redirect(`/rooms/${roomId}?tab=manage`);
+}
+
+export async function updateTenantAction(formData: FormData) {
+  await requireAdminUser();
+  const roomId = String(formData.get("roomId") || "");
+  const tenantId = String(formData.get("tenantId") || "");
+  const tenancyId = String(formData.get("tenancyId") || "");
+
+  await db.$transaction(async (tx) => {
+    await tx.tenant.update({
+      where: { id: tenantId },
+      data: {
+        fullName: String(formData.get("fullName") || "").trim(),
+        phone: String(formData.get("phone") || "").trim() || null,
+        idNumber: String(formData.get("idNumber") || "").trim() || null,
+        permanentAddress: String(formData.get("permanentAddress") || "").trim() || null,
+        emergencyContact: String(formData.get("emergencyContact") || "").trim() || null,
+        notes: String(formData.get("tenantNotes") || "").trim() || null,
+      },
+    });
+
+    await tx.tenancy.update({
+      where: { id: tenancyId },
+      data: {
+        startDate: toDate(formData.get("startDate")),
+        startRent: toNumber(formData.get("startRent")),
+        startWater: toNumber(formData.get("startWater")),
+        startMeterReading: requireNumber(formData.get("startMeterReading"), "Starting meter reading"),
+        moveInNotes: String(formData.get("moveInNotes") || "").trim() || null,
+      },
+    });
+  });
+
+  revalidatePath(`/rooms/${roomId}`);
+  revalidatePath("/tenants");
+  revalidatePath("/properties");
+  revalidatePath("/dashboard");
+  redirect(`/rooms/${roomId}?tab=manage`);
+}
+
 export async function startTenancyAction(formData: FormData) {
   const user = await requireAdminUser();
   const roomId = String(formData.get("roomId") || "");

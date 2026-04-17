@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createRoomAction } from "@/app/actions";
+import { createRoomAction, updatePropertyAction } from "@/app/actions";
 import { Badge, Button, Card, EmptyState, Field, LinkButton, PageHeader, SegmentedTabs, StatCard, TextArea, TextInput } from "@/components/ui";
 import { isEditMode } from "@/lib/auth";
 import { getPropertyDetail } from "@/lib/data";
@@ -214,25 +214,43 @@ export default async function PropertyDetailPage({
       )}
 
       {editMode ? (
-        <Card className="listing-card rounded-[32px] p-6 sm:p-7">
-          <h2 className="text-lg font-semibold text-slate-950">Add room</h2>
-          <p className="mt-1 text-sm text-slate-500">New units stay in setup, away from the live monthly flow.</p>
-          <form action={createRoomAction} className="mt-5 space-y-3">
-            <input type="hidden" name="propertyId" value={property.id} />
-            <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Room number"><TextInput name="roomNumber" required placeholder="101" /></Field>
-              <Field label="Label"><TextInput name="roomLabel" placeholder="Front room" /></Field>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Default rent"><TextInput name="currentDefaultRent" type="number" step="0.01" required /></Field>
-              <Field label="Default water"><TextInput name="currentDefaultWater" type="number" step="0.01" required /></Field>
-            </div>
-            <Field label="Meter label"><TextInput name="meterLabel" placeholder="Meter A" /></Field>
-            <Field label="Opening balance"><TextInput name="openingBalance" type="number" step="0.01" defaultValue="0" /></Field>
-            <Field label="Notes"><TextArea name="notes" placeholder="Optional room notes" /></Field>
-            <Button type="submit" className="w-full">Create room</Button>
-          </form>
-        </Card>
+        <div className="grid gap-6 xl:grid-cols-2">
+          <Card className="listing-card rounded-[32px] p-6 sm:p-7">
+            <h2 className="text-lg font-semibold text-slate-950">Edit building</h2>
+            <p className="mt-1 text-sm text-slate-500">Update building details and defaults.</p>
+            <form action={updatePropertyAction} className="mt-5 space-y-3">
+              <input type="hidden" name="propertyId" value={property.id} />
+              <Field label="Building name"><TextInput name="name" required defaultValue={property.name} /></Field>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label="Code"><TextInput name="code" defaultValue={property.code || ""} /></Field>
+                <Field label="Electricity rate"><TextInput name="defaultElectricityRate" type="number" step="0.01" defaultValue={property.defaultElectricityRate} /></Field>
+              </div>
+              <Field label="Address"><TextInput name="address" defaultValue={property.address || ""} /></Field>
+              <Field label="Notes"><TextArea name="notes" defaultValue={property.notes || ""} /></Field>
+              <Button type="submit" className="w-full">Save building</Button>
+            </form>
+          </Card>
+
+          <Card className="listing-card rounded-[32px] p-6 sm:p-7">
+            <h2 className="text-lg font-semibold text-slate-950">Add room</h2>
+            <p className="mt-1 text-sm text-slate-500">Add a new unit to this building.</p>
+            <form action={createRoomAction} className="mt-5 space-y-3">
+              <input type="hidden" name="propertyId" value={property.id} />
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label="Room number"><TextInput name="roomNumber" required placeholder="101" /></Field>
+                <Field label="Label"><TextInput name="roomLabel" placeholder="Front room" /></Field>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label="Default rent"><TextInput name="currentDefaultRent" type="number" step="0.01" required /></Field>
+                <Field label="Default water"><TextInput name="currentDefaultWater" type="number" step="0.01" required /></Field>
+              </div>
+              <Field label="Meter label"><TextInput name="meterLabel" placeholder="Meter A" /></Field>
+              <Field label="Opening balance"><TextInput name="openingBalance" type="number" step="0.01" defaultValue="0" /></Field>
+              <Field label="Notes"><TextArea name="notes" placeholder="Optional room notes" /></Field>
+              <Button type="submit" className="w-full">Create room</Button>
+            </form>
+          </Card>
+        </div>
       ) : null}
     </div>
   );
