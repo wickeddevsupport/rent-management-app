@@ -16,22 +16,22 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <section className="listing-hero flex min-h-[420px] flex-col justify-between rounded-[36px] p-8 text-white sm:p-10">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">Private property operations</p>
-            <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">A cleaner rent collection surface for real buildings, real units, and real residents.</h1>
-            <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">Built for monthly collection, utility tracking, receipts, and tenancy follow-through without the usual clunky admin-panel feel.</p>
+            <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">Rent collection, meter readings, receipts, and tenancies.</h1>
+            <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">Private access for monthly billing, payment entry, resident records, and receipt sharing.</p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Collector-first</p>
-              <p className="mt-2 text-sm font-semibold text-white">Fast room-by-room flow</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Collections</p>
+              <p className="mt-2 text-sm font-semibold text-white">Room-by-room entry</p>
             </div>
             <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">BS-first</p>
-              <p className="mt-2 text-sm font-semibold text-white">Visible dates stay Nepali</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">BS dates</p>
+              <p className="mt-2 text-sm font-semibold text-white">Dates shown in Bikram Sambat</p>
             </div>
             <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Mobile-ready</p>
-              <p className="mt-2 text-sm font-semibold text-white">Built for field collection</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Receipts</p>
+              <p className="mt-2 text-sm font-semibold text-white">Share from phone</p>
             </div>
           </div>
         </section>
@@ -40,7 +40,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Sign in</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">Rent Management</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">Private access for monthly collection, residents, bills, and receipts.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">Sign in to manage buildings, units, residents, bills, and receipts.</p>
           </div>
 
           <form action={loginAction} className="mt-8 space-y-4">

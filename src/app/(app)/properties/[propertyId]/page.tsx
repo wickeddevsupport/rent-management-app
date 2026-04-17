@@ -76,7 +76,7 @@ export default async function PropertyDetailPage({
 
       <PageHeader
         title="Units"
-        subtitle="Two clear views: card view for quick scanning, sheet view for denser handling without endless vertical scrolling."
+        subtitle="Switch between card view and sheet view for this building."
         action={
           <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
             <SegmentedTabs

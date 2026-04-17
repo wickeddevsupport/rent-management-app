@@ -16,7 +16,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ receip
     <div className="space-y-6">
       <PageHeader
         title={`Receipt ${receipt.receiptNumber}`}
-        subtitle="A cleaner receipt surface for phone sharing, screenshots, and quick verification."
+        subtitle="Receipt details and share link."
         action={<LinkButton href={`/rooms/${payment.roomId}`} variant="secondary">Back to room</LinkButton>}
       />
 
@@ -24,7 +24,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ receip
         <div className="listing-cover px-6 py-6 text-white sm:px-8">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">Payment receipt</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">Receipt</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white">{receipt.receiptNumber}</h2>
               <p className="mt-2 text-sm text-slate-200">{payment.room.property.name} · Room {payment.room.roomNumber}</p>
             </div>

@@ -13,8 +13,8 @@ export default async function TenantsPage() {
         <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">Residents directory</p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Residents should feel like people attached to real units, not raw records.</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">Cleaner cards, clearer occupancy state, and direct jump-back into the live unit.</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Residents and tenancy records.</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">See who is staying in each room and open the current unit directly.</p>
           </div>
           <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
             <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Residents</p>
@@ -23,7 +23,7 @@ export default async function TenantsPage() {
         </div>
       </section>
 
-      <PageHeader title="Residents" subtitle="Current and past occupancy, linked back to the active room without the old admin-panel feel." />
+      <PageHeader title="Residents" subtitle="Current and past occupancy linked back to the room." />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {tenants.length ? tenants.map((tenant) => {

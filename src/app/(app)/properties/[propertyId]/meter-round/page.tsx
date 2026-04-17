@@ -33,7 +33,7 @@ export default async function MeterRoundPage({
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">Operational mode</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{property.name} · Meter round</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">The sheet view is the fast lane: denser entry, less vertical scrolling, and a clearer pass through the building.</p>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">Enter current meter numbers for occupied units.</p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
@@ -53,8 +53,8 @@ export default async function MeterRoundPage({
       </section>
 
       <PageHeader
-        title="Fast reading entry"
-        subtitle="Switch between a denser sheet and a larger card layout depending on whether you are moving fast or reviewing one unit at a time."
+        title="Meter round"
+        subtitle="Use sheet view for the full round or cards for one unit at a time."
         action={
           <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
             <SegmentedTabs

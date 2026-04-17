@@ -33,8 +33,8 @@ export default async function PropertiesPage() {
         <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">Portfolio</p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Buildings first. Units second. Collection always in view.</h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">A quieter property surface for monthly rounds, due tracking, occupancy, and resident follow-through.</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Portfolio overview</h1>
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">See buildings, occupied units, pending readings, and total due for this month.</p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[520px]">
             <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
@@ -61,7 +61,7 @@ export default async function PropertiesPage() {
         </div>
       </section>
 
-      <PageHeader title="Properties" subtitle="Open a building to see its units, current exposure, and monthly movement." />
+      <PageHeader title="Properties" subtitle="Open a building to review units, dues, and recent activity." />
 
       <div className="grid gap-5 xl:grid-cols-2">
         {properties.length ? (

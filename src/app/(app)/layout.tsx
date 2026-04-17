@@ -28,7 +28,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <h1 className="text-xl font-semibold tracking-tight text-white">Property Collections</h1>
                 {editMode ? <Badge tone="amber">Edit mode</Badge> : <Badge tone="blue">Live view</Badge>}
               </div>
-              <p className="mt-1 text-sm text-slate-300">A sharper operating surface for properties, units, residents, and collection — less dashboard sludge, more real product feel.</p>
+              <p className="mt-1 text-sm text-slate-300">Properties, units, residents, receipts, and monthly collection.</p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">

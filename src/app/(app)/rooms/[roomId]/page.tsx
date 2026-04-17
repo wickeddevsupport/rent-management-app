@@ -85,8 +85,8 @@ export default async function RoomDetailPage({
       </section>
 
       <PageHeader
-        title="Collection surface"
-        subtitle="One room, one clear task at a time. Tabs separate collection, history, resident context, and management so the screen stops fighting itself."
+        title="Room collection"
+        subtitle="Use tabs for collection, history, resident details, and management." 
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <LinkButton href={`/properties/${room.propertyId}`} variant="secondary">Back to units</LinkButton>
@@ -109,7 +109,7 @@ export default async function RoomDetailPage({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-emerald-950">Collection saved</h2>
-              <p className="mt-1 text-sm text-emerald-800">Everything for {bsMonth} is stored. You can open the receipt or move straight to the next room.</p>
+              <p className="mt-1 text-sm text-emerald-800">Saved for {bsMonth}. Open the receipt or continue to the next room.</p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               {query.receiptId ? <LinkButton href={`/receipts/${query.receiptId}`} variant="secondary">Open receipt</LinkButton> : null}
@@ -132,14 +132,14 @@ export default async function RoomDetailPage({
             <div className="border-b border-slate-200/80 px-5 py-5 sm:px-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Collect for this unit</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Collect without the clutter</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Meter, payment, correction, and visit note stay together, while history and setup live on their own tabs.</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Collection</p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Current month entry</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Enter meter reading, payment, adjustment, and visit note.</p>
                 </div>
                 <div className="surface-dark rounded-3xl px-4 py-3 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">Amount due</p>
                   <p className="mt-1 text-2xl font-semibold text-white">{money(totalDue)}</p>
-                  <p className="mt-1 text-sm text-slate-300">Advance already accounted for</p>
+                  <p className="mt-1 text-sm text-slate-300">After advance credit</p>
                 </div>
               </div>
             </div>
@@ -214,7 +214,7 @@ export default async function RoomDetailPage({
 
           <div className="space-y-6">
             <Card className="listing-card">
-              <SectionTitle title="Collection snapshot" subtitle="The numbers you usually need before saving." />
+              <SectionTitle title="Collection summary" subtitle="Current amounts for this room." />
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="surface-subtle rounded-3xl p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Rent</p>
@@ -238,7 +238,7 @@ export default async function RoomDetailPage({
             </Card>
 
             <Card className="listing-card">
-              <SectionTitle title="Resident snapshot" subtitle="Quick context without opening the management tab." />
+              <SectionTitle title="Resident summary" subtitle="Current resident and room details." />
               {activeTenancy ? (
                 <div className="grid gap-4 text-sm sm:grid-cols-2">
                   <div><span className="block text-xs uppercase tracking-wide text-slate-400">Resident</span><span className="text-slate-950">{activeTenancy.tenant.fullName}</span></div>
@@ -303,7 +303,7 @@ export default async function RoomDetailPage({
       {currentTab === "resident" ? (
         <div className="grid gap-6 xl:grid-cols-[0.9fr,1.1fr]">
           <Card className="listing-card">
-            <SectionTitle title="Resident snapshot" subtitle="Who is here and what baseline the unit currently follows." />
+            <SectionTitle title="Resident details" subtitle="Current resident and billing baseline." />
             {activeTenancy ? (
               <div className="grid gap-4 text-sm sm:grid-cols-2">
                 <div><span className="block text-xs uppercase tracking-wide text-slate-400">Resident</span><span className="text-slate-950">{activeTenancy.tenant.fullName}</span></div>
@@ -319,7 +319,7 @@ export default async function RoomDetailPage({
           </Card>
 
           <Card className="listing-card">
-            <SectionTitle title="Unit context" subtitle="A compact baseline for handling the room without jumping across screens." />
+            <SectionTitle title="Room details" subtitle="Current room status and latest billing state." />
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="surface-subtle rounded-3xl p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Status</p>
@@ -400,7 +400,7 @@ export default async function RoomDetailPage({
 
           <div className="space-y-6">
             <Card className="listing-card">
-              <SectionTitle title="Actions" subtitle="Destructive actions stay isolated here instead of living next to collection." />
+              <SectionTitle title="Actions" subtitle="Archive and tenancy changes." />
               {editMode ? (
                 <form action={archiveRoomAction}>
                   <input type="hidden" name="roomId" value={room.id} />
@@ -412,7 +412,7 @@ export default async function RoomDetailPage({
             </Card>
 
             <Card className="listing-card">
-              <SectionTitle title="Quick context" subtitle="Still useful while you are changing the unit state." />
+              <SectionTitle title="Current room state" subtitle="Due amount and latest meter number." />
               <div className="grid gap-3">
                 <div className="surface-subtle rounded-3xl p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Due now</p>
