@@ -54,7 +54,7 @@ export default async function RoomDetailPage({
         subtitle={activeTenancy ? `${activeTenancy.tenant.fullName} · ${activeTenancy.tenant.phone || "No phone added"}` : "No active tenant in this room right now."}
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Link href={`/properties/${room.propertyId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+            <Link href={`/properties/${room.propertyId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold !text-slate-800 transition hover:bg-slate-50">
               Back to rooms
             </Link>
             <Badge tone={roomStatusTone(room.status)}>{room.status.toLowerCase()}</Badge>
@@ -75,7 +75,7 @@ export default async function RoomDetailPage({
                   Open receipt
                 </Link>
               ) : null}
-              <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-700 px-4 text-sm font-semibold text-white transition hover:bg-emerald-600">
+              <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-700 px-4 text-sm font-semibold !text-white transition hover:bg-emerald-600">
                 {nextRoomId ? "Next room" : "Back to property"}
               </Link>
             </div>
@@ -100,7 +100,7 @@ export default async function RoomDetailPage({
                   <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Everything needed for this room, in one place</h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Clear charges, clear due amount, and one save action. No extra admin-looking clutter.</p>
                 </div>
-                <div className="rounded-3xl bg-slate-950 px-4 py-3 text-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
+                <div className="rounded-3xl bg-slate-950 px-4 py-3 !text-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">Current month</p>
                   <p className="mt-1 text-lg font-semibold">{bsMonth}</p>
                   <p className="mt-1 text-sm text-slate-300">Due {money(totalDue)}</p>
@@ -186,13 +186,13 @@ export default async function RoomDetailPage({
                       </div>
                     </div>
 
-                    <div className="rounded-3xl border border-slate-200 bg-slate-950 p-4 text-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
+                    <div className="rounded-3xl border border-slate-200 bg-slate-950 p-4 !text-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Ready to save</p>
                       <p className="mt-2 text-lg font-semibold">Bill and collection will be recorded together.</p>
                       <p className="mt-2 text-sm leading-6 text-slate-300">If payment is entered, a receipt is created immediately. If amount is 0, only the bill is saved.</p>
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                        <Button type="submit" className="flex-1 bg-white text-slate-950 hover:bg-slate-100">Save collection</Button>
-                        <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-700 px-4 text-sm font-semibold text-white transition hover:bg-slate-900">
+                        <Button type="submit" className="flex-1 bg-white !text-slate-950 hover:bg-slate-100">Save collection</Button>
+                        <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-700 px-4 text-sm font-semibold !text-white transition hover:bg-slate-900">
                           {nextRoomId ? "Skip to next room" : "Back to property"}
                         </Link>
                       </div>
@@ -233,7 +233,7 @@ export default async function RoomDetailPage({
           <Card>
             <SectionTitle title="Room snapshot" subtitle="Current tenant and latest collection baseline." />
             {activeTenancy ? (
-              <div className="grid gap-4 text-sm text-slate-700 sm:grid-cols-2">
+              <div className="grid gap-4 text-sm !text-slate-800 sm:grid-cols-2">
                 <div><span className="block text-xs uppercase tracking-wide text-slate-400">Tenant</span>{activeTenancy.tenant.fullName}</div>
                 <div><span className="block text-xs uppercase tracking-wide text-slate-400">Phone</span>{activeTenancy.tenant.phone || "—"}</div>
                 <div><span className="block text-xs uppercase tracking-wide text-slate-400">Move in date</span>{shortDate(activeTenancy.startDate)}</div>
@@ -313,7 +313,7 @@ export default async function RoomDetailPage({
               <SectionTitle title="Archive room" subtitle="No hard delete. History stays intact." />
               <form action={archiveRoomAction}>
                 <input type="hidden" name="roomId" value={room.id} />
-                <Button type="submit" className="w-full bg-rose-600 text-white hover:bg-rose-500">Archive room</Button>
+                <Button type="submit" className="w-full bg-rose-600 !text-white hover:bg-rose-500">Archive room</Button>
               </form>
             </Card>
           ) : null}

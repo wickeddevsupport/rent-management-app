@@ -38,10 +38,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         subtitle={`${property.address || "Property collection screen"} · ${bsMonth}`}
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Link href={`/properties/${property.id}/meter-round`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-medium text-white transition hover:bg-slate-800">
+            <Link href={`/properties/${property.id}/meter-round`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-medium !text-white transition hover:bg-slate-800">
               Meter round
             </Link>
-            <Link href="/properties" className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+            <Link href="/properties" className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium !text-slate-800 transition hover:bg-slate-200">
               Back to properties
             </Link>
           </div>

@@ -23,7 +23,7 @@ export default async function MeterRoundPage({ params }: { params: Promise<{ pro
       <PageHeader
         title={`${property.name} · Meter round`}
         subtitle={`${bsMonth}. Enter reading, save, move to the next room.`}
-        action={<Link href={`/properties/${property.id}`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-200">Back to property</Link>}
+        action={<Link href={`/properties/${property.id}`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium !text-slate-800 transition hover:bg-slate-200">Back to property</Link>}
       />
 
       <div className="space-y-3">
@@ -62,7 +62,7 @@ export default async function MeterRoundPage({ params }: { params: Promise<{ pro
 
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button type="submit" className="flex-1">Save reading</Button>
-                    <Link href={`/rooms/${room.id}`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+                    <Link href={`/rooms/${room.id}`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium !text-slate-800 transition hover:bg-slate-200">
                       Open room
                     </Link>
                   </div>
