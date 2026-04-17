@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { archiveRoomAction, collectRoomAction, endTenancyAction, startTenancyAction } from "@/app/actions";
 import { isEditMode } from "@/lib/auth";
 import { availableCreditForRoom, getRoomDetail, outstandingForRoom } from "@/lib/data";
-import { bsDate, bsMonthLabelFromDate, money, shortDate } from "@/lib/format";
+import { bsDate, bsMonthLabelFromDate, bsMonthLabelFromMonthYear, money, shortDate } from "@/lib/format";
+import { BsDateInput } from "@/components/bs-date-input";
 import { Badge, Button, Card, EmptyState, Field, PageHeader, SectionTitle, StatCard, TextArea, TextInput, Select } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -155,7 +156,7 @@ export default async function RoomDetailPage({
                       <h3 className="text-base font-semibold text-slate-950">Payment details</h3>
                       <div className="mt-4 grid gap-4 md:grid-cols-2">
                         <Field label="Payment date">
-                          <TextInput name="paymentDate" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required />
+                          <BsDateInput name="paymentDate" defaultValue={new Date()} required />
                         </Field>
                         <Field label="Payment mode">
                           <Select name="paymentMode" defaultValue="CASH">
@@ -236,7 +237,7 @@ export default async function RoomDetailPage({
               <div className="grid gap-4 text-sm !text-slate-800 sm:grid-cols-2">
                 <div><span className="block text-xs uppercase tracking-wide text-slate-400">Tenant</span>{activeTenancy.tenant.fullName}</div>
                 <div><span className="block text-xs uppercase tracking-wide text-slate-400">Phone</span>{activeTenancy.tenant.phone || "—"}</div>
-                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Move in date</span>{shortDate(activeTenancy.startDate)}</div>
+                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Joined on</span>{shortDate(activeTenancy.startDate)}</div>
                 <div><span className="block text-xs uppercase tracking-wide text-slate-400">Meter label</span>{room.meterLabel || "—"}</div>
                 <div><span className="block text-xs uppercase tracking-wide text-slate-400">Move-in electricity number</span>{activeTenancy.startMeterReading}</div>
                 <div><span className="block text-xs uppercase tracking-wide text-slate-400">Latest saved number</span>{liveElectricityNumber}</div>
@@ -254,7 +255,7 @@ export default async function RoomDetailPage({
                   <div key={cycle.id} className="rounded-3xl border border-slate-200 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-slate-950">{cycle.month}/{cycle.year}</p>
+                        <p className="font-semibold text-slate-950">{bsMonthLabelFromMonthYear(cycle.month, cycle.year)}</p>
                         <p className="mt-1 text-sm text-slate-500">Number {cycle.previousMeterReading} → {cycle.currentMeterReading} · {cycle.electricityUnits} units</p>
                       </div>
                       <Badge tone={cycle.closingBalance > 0 ? "red" : "green"}>{money(cycle.closingBalance)}</Badge>
@@ -274,7 +275,7 @@ export default async function RoomDetailPage({
                 <form action={endTenancyAction} className="space-y-3">
                   <input type="hidden" name="roomId" value={room.id} />
                   <input type="hidden" name="tenancyId" value={activeTenancy.id} />
-                  <Field label="End date"><TextInput name="endDate" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></Field>
+                  <Field label="End date"><BsDateInput name="endDate" defaultValue={new Date()} required /></Field>
                   <Field label="Move out note"><TextArea name="moveOutNotes" placeholder="Optional closing note" /></Field>
                   <Button type="submit" className="w-full">End tenancy</Button>
                 </form>
@@ -292,11 +293,21 @@ export default async function RoomDetailPage({
                     <Field label="Rent"><TextInput name="startRent" type="number" step="0.01" defaultValue={room.currentDefaultRent} required /></Field>
                     <Field label="Water"><TextInput name="startWater" type="number" step="0.01" defaultValue={room.currentDefaultWater} required /></Field>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <Field label="Start date"><TextInput name="startDate" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></Field>
-                    <Field label="Electricity number at move-in" hint="Enter the live number when the tenant enters.">
-                      <TextInput name="startMeterReading" type="number" step="0.01" required />
-                    </Field>
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
+                    <h3 className="text-base font-semibold text-slate-950">Current starting point</h3>
+                    <p className="mt-1 text-sm text-slate-500">Use the tenant’s real situation today so the app continues from the live state.</p>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      <Field label="Joined on"><BsDateInput name="startDate" defaultValue={new Date()} required /></Field>
+                      <Field label="Current electricity number" hint="Use the live number today. Future collections continue from here.">
+                        <TextInput name="startMeterReading" type="number" step="0.01" defaultValue={currentCycle?.currentMeterReading ?? 0} required />
+                      </Field>
+                      <Field label="Current due already pending" hint="Any unpaid balance that exists before the first collection in this app.">
+                        <TextInput name="openingBalance" type="number" step="0.01" defaultValue={room.openingBalance} />
+                      </Field>
+                      <Field label="Advance already with us" hint="If the tenant already has advance/credit, enter it here.">
+                        <TextInput name="advanceBalance" type="number" step="0.01" defaultValue={room.creditBalance} />
+                      </Field>
+                    </div>
                   </div>
                   <Field label="Move in note"><TextArea name="moveInNotes" placeholder="Optional move-in note" /></Field>
                   <Field label="Tenant note"><TextArea name="tenantNotes" placeholder="Optional note about this tenant" /></Field>

@@ -308,43 +308,88 @@ export async function createRoomAction(formData: FormData) {
 }
 
 export async function startTenancyAction(formData: FormData) {
-  await requireAdminUser();
+  const user = await requireAdminUser();
   const roomId = String(formData.get("roomId") || "");
-  const room = await db.room.findUnique({ where: { id: roomId }, include: { tenancies: { where: { isActive: true } } } });
-  if (!room || room.tenancies.length) redirect(`/rooms/${roomId}`);
-  const startMeterReading = requireNumber(formData.get("startMeterReading"), "Starting meter reading");
-
-  const tenant = await db.tenant.create({
-    data: {
-      fullName: String(formData.get("fullName") || "").trim(),
-      phone: String(formData.get("phone") || "").trim() || null,
-      idNumber: String(formData.get("idNumber") || "").trim() || null,
-      permanentAddress: String(formData.get("permanentAddress") || "").trim() || null,
-      emergencyContact: String(formData.get("emergencyContact") || "").trim() || null,
-      notes: String(formData.get("tenantNotes") || "").trim() || null,
-    },
-  });
-
-  await db.tenancy.create({
-    data: {
-      roomId,
-      tenantId: tenant.id,
-      startDate: toDate(formData.get("startDate")),
-      startRent: toNumber(formData.get("startRent"), room.currentDefaultRent),
-      startWater: toNumber(formData.get("startWater"), room.currentDefaultWater),
-      startMeterReading,
-      moveInNotes: String(formData.get("moveInNotes") || "").trim() || null,
-      isActive: true,
-    },
-  });
-
-  await db.room.update({
+  const room = await db.room.findUnique({
     where: { id: roomId },
-    data: {
-      status: RoomStatus.OCCUPIED,
-      currentDefaultRent: toNumber(formData.get("startRent"), room.currentDefaultRent),
-      currentDefaultWater: toNumber(formData.get("startWater"), room.currentDefaultWater),
+    include: {
+      tenancies: { where: { isActive: true } },
+      billingCycles: { take: 1, orderBy: [{ year: "desc" }, { month: "desc" }] },
+      payments: { take: 1, orderBy: { paymentDate: "desc" } },
     },
+  });
+  if (!room || room.tenancies.length) redirect(`/rooms/${roomId}`);
+
+  const startMeterReading = requireNumber(formData.get("startMeterReading"), "Starting meter reading");
+  const startRent = toNumber(formData.get("startRent"), room.currentDefaultRent);
+  const startWater = toNumber(formData.get("startWater"), room.currentDefaultWater);
+  const openingBalance = Math.max(toNumber(formData.get("openingBalance"), room.openingBalance), 0);
+  const advanceBalance = Math.max(toNumber(formData.get("advanceBalance"), room.creditBalance), 0);
+  const hasHistory = room.billingCycles.length > 0 || room.payments.length > 0;
+
+  await db.$transaction(async (tx) => {
+    const tenant = await tx.tenant.create({
+      data: {
+        fullName: String(formData.get("fullName") || "").trim(),
+        phone: String(formData.get("phone") || "").trim() || null,
+        idNumber: String(formData.get("idNumber") || "").trim() || null,
+        permanentAddress: String(formData.get("permanentAddress") || "").trim() || null,
+        emergencyContact: String(formData.get("emergencyContact") || "").trim() || null,
+        notes: String(formData.get("tenantNotes") || "").trim() || null,
+      },
+    });
+
+    await tx.tenancy.create({
+      data: {
+        roomId,
+        tenantId: tenant.id,
+        startDate: toDate(formData.get("startDate")),
+        startRent,
+        startWater,
+        startMeterReading,
+        moveInNotes: String(formData.get("moveInNotes") || "").trim() || null,
+        isActive: true,
+      },
+    });
+
+    await tx.room.update({
+      where: { id: roomId },
+      data: {
+        status: RoomStatus.OCCUPIED,
+        currentDefaultRent: startRent,
+        currentDefaultWater: startWater,
+        ...(hasHistory ? {} : { openingBalance, creditBalance: advanceBalance }),
+      },
+    });
+
+    if (!hasHistory) {
+      const openingEntries = [
+        ...(openingBalance > 0
+          ? [{
+              roomId,
+              createdByUserId: user.id,
+              entryType: "opening_due_import",
+              amount: openingBalance,
+              direction: "debit",
+              description: "Imported opening due before first collection",
+            }]
+          : []),
+        ...(advanceBalance > 0
+          ? [{
+              roomId,
+              createdByUserId: user.id,
+              entryType: "opening_advance_import",
+              amount: advanceBalance,
+              direction: "credit",
+              description: "Imported opening advance before first collection",
+            }]
+          : []),
+      ];
+
+      if (openingEntries.length) {
+        await tx.ledgerEntry.createMany({ data: openingEntries });
+      }
+    }
   });
 
   revalidatePath(`/rooms/${roomId}`);
