@@ -3,12 +3,18 @@ import { cn } from "@/lib/format";
 
 type ButtonVariant = "primary" | "secondary" | "inverse" | "glass" | "danger";
 
+type TabItem = {
+  label: string;
+  href: string;
+  active?: boolean;
+};
+
 const buttonVariantClass: Record<ButtonVariant, string> = {
-  primary: "border border-slate-950/90 bg-slate-950 !text-white hover:bg-slate-800 hover:!text-white",
-  secondary: "border border-slate-200 bg-white !text-slate-900 hover:bg-slate-50 hover:!text-slate-900",
-  inverse: "border border-white/20 bg-white !text-slate-950 hover:bg-slate-100 hover:!text-slate-950",
-  glass: "border border-white/15 bg-white/10 !text-white hover:bg-white/15 hover:!text-white",
-  danger: "border border-rose-600 bg-rose-600 !text-white hover:bg-rose-500 hover:!text-white",
+  primary: "btn-primary",
+  secondary: "btn-secondary",
+  inverse: "btn-inverse",
+  glass: "btn-glass",
+  danger: "btn-danger",
 };
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
@@ -56,15 +62,25 @@ export function SectionTitle({ title, subtitle, action }: { title: string; subti
   );
 }
 
+export function SegmentedTabs({ tabs, className }: { tabs: TabItem[]; className?: string }) {
+  return (
+    <div className={cn("segmented-tabs", className)}>
+      {tabs.map((tab) => (
+        <Link
+          key={tab.href}
+          href={tab.href}
+          aria-current={tab.active ? "page" : undefined}
+          className={cn("segmented-tab", tab.active && "is-active")}
+        >
+          {tab.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "red" | "green" | "amber" | "blue" }) {
-  const map = {
-    neutral: "bg-slate-100 text-slate-700 border-slate-200",
-    red: "bg-rose-100 text-rose-700 border-rose-200",
-    green: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    amber: "bg-amber-100 text-amber-800 border-amber-200",
-    blue: "bg-blue-100 text-blue-700 border-blue-200",
-  };
-  return <span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold", map[tone])}>{children}</span>;
+  return <span className={cn("badge", `badge-${tone}`)}>{children}</span>;
 }
 
 export function EmptyState({ title, text }: { title: string; text: string }) {
@@ -99,7 +115,7 @@ export function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 }
 
 export function Button({ className, variant = "primary", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
-  return <button {...props} className={cn("inline-flex h-12 items-center justify-center rounded-2xl px-4 text-sm font-semibold shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] transition disabled:opacity-50", buttonVariantClass[variant], className)} />;
+  return <button {...props} className={cn("btn inline-flex h-12 items-center justify-center rounded-2xl px-4 text-sm font-semibold transition disabled:opacity-50", buttonVariantClass[variant], className)} />;
 }
 
 export function SoftButton({ className, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
@@ -108,7 +124,7 @@ export function SoftButton({ className, ...props }: React.ButtonHTMLAttributes<H
 
 export function LinkButton({ href, children, variant = "primary", className }: { href: string; children: React.ReactNode; variant?: ButtonVariant; className?: string }) {
   return (
-    <Link href={href} className={cn("inline-flex h-12 items-center justify-center rounded-2xl px-4 text-sm font-semibold shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] transition", buttonVariantClass[variant], className)}>
+    <Link href={href} className={cn("btn inline-flex h-12 items-center justify-center rounded-2xl px-4 text-sm font-semibold transition", buttonVariantClass[variant], className)}>
       {children}
     </Link>
   );

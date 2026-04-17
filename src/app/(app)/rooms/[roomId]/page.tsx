@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { archiveRoomAction, collectRoomAction, endTenancyAction, startTenancyAction } from "@/app/actions";
 import { BsDateInput } from "@/components/bs-date-input";
-import { Badge, Button, Card, EmptyState, Field, PageHeader, SectionTitle, StatCard, TextArea, TextInput, Select } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, Field, LinkButton, PageHeader, SectionTitle, SegmentedTabs, Select, StatCard, TextArea, TextInput } from "@/components/ui";
 import { isEditMode } from "@/lib/auth";
 import { availableCreditForRoom, getRoomDetail, outstandingForRoom } from "@/lib/data";
 import { bsDate, bsMonthLabelFromDate, bsMonthLabelFromMonthYear, money, shortDate } from "@/lib/format";
@@ -20,7 +19,7 @@ export default async function RoomDetailPage({
   searchParams,
 }: {
   params: Promise<{ roomId: string }>;
-  searchParams: Promise<{ saved?: string; receiptId?: string }>;
+  searchParams: Promise<{ saved?: string; receiptId?: string; tab?: string }>;
 }) {
   const { roomId } = await params;
   const query = await searchParams;
@@ -36,9 +35,8 @@ export default async function RoomDetailPage({
   const year = now.getFullYear();
   const currentCycle = room.billingCycles.find((cycle) => cycle.month === month && cycle.year === year) || room.billingCycles[0] || null;
   const propertyRoomIds = room.property.rooms?.map?.((item: { id: string }) => item.id) || [];
-  const roomIds = propertyRoomIds.length ? propertyRoomIds : [];
-  const currentIndex = roomIds.findIndex((id: string) => id === room.id);
-  const nextRoomId = currentIndex >= 0 ? roomIds[currentIndex + 1] : null;
+  const currentIndex = propertyRoomIds.findIndex((id: string) => id === room.id);
+  const nextRoomId = currentIndex >= 0 ? propertyRoomIds[currentIndex + 1] : null;
   const nextRoomHref = nextRoomId ? `/rooms/${nextRoomId}` : `/properties/${room.propertyId}`;
   const bsMonth = bsMonthLabelFromDate(now);
   const liveElectricityNumber = currentCycle?.currentMeterReading ?? activeTenancy?.startMeterReading ?? 0;
@@ -47,6 +45,7 @@ export default async function RoomDetailPage({
   const waterAmount = activeTenancy?.startWater ?? room.currentDefaultWater;
   const electricityAmount = currentCycle?.electricityAmount ?? 0;
   const amountReceivedDefault = totalDue > 0 ? totalDue : currentCycle?.closingBalance ?? 0;
+  const currentTab = ["collect", "history", "resident", "manage"].includes(query.tab || "") ? (query.tab as "collect" | "history" | "resident" | "manage") : "collect";
 
   return (
     <div className="space-y-6">
@@ -87,17 +86,22 @@ export default async function RoomDetailPage({
 
       <PageHeader
         title="Collection surface"
-        subtitle="Resident state, utility baseline, due amount, and the primary collection action — all kept on one cleaner unit page."
+        subtitle="One room, one clear task at a time. Tabs separate collection, history, resident context, and management so the screen stops fighting itself."
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Link href={`/properties/${room.propertyId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold !text-slate-900 transition hover:bg-slate-50 hover:!text-slate-900">
-              Back to units
-            </Link>
-            <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-950/90 bg-slate-950 px-4 text-sm font-semibold !text-white transition hover:bg-slate-800 hover:!text-white">
-              {nextRoomId ? "Next room" : "Back to building"}
-            </Link>
+            <LinkButton href={`/properties/${room.propertyId}`} variant="secondary">Back to units</LinkButton>
+            <LinkButton href={nextRoomHref} variant="primary">{nextRoomId ? "Next room" : "Back to building"}</LinkButton>
           </div>
         }
+      />
+
+      <SegmentedTabs
+        tabs={[
+          { label: "Collect", href: `/rooms/${room.id}?tab=collect`, active: currentTab === "collect" },
+          { label: "History", href: `/rooms/${room.id}?tab=history`, active: currentTab === "history" },
+          { label: "Resident", href: `/rooms/${room.id}?tab=resident`, active: currentTab === "resident" },
+          { label: "Manage", href: `/rooms/${room.id}?tab=manage`, active: currentTab === "manage" },
+        ]}
       />
 
       {query.saved === "1" ? (
@@ -108,14 +112,8 @@ export default async function RoomDetailPage({
               <p className="mt-1 text-sm text-emerald-800">Everything for {bsMonth} is stored. You can open the receipt or move straight to the next room.</p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              {query.receiptId ? (
-                <Link href={`/receipts/${query.receiptId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-emerald-200 bg-white px-4 text-sm font-semibold !text-emerald-900 transition hover:bg-emerald-100 hover:!text-emerald-900">
-                  Open receipt
-                </Link>
-              ) : null}
-              <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-700 px-4 text-sm font-semibold !text-white transition hover:bg-emerald-600 hover:!text-white">
-                {nextRoomId ? "Continue to next room" : "Back to building"}
-              </Link>
+              {query.receiptId ? <LinkButton href={`/receipts/${query.receiptId}`} variant="secondary">Open receipt</LinkButton> : null}
+              <LinkButton href={nextRoomHref} variant="primary">{nextRoomId ? "Continue to next room" : "Back to building"}</LinkButton>
             </div>
           </div>
         </Card>
@@ -128,17 +126,17 @@ export default async function RoomDetailPage({
         <StatCard label="Water" value={money(waterAmount)} />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
-        <div className="space-y-6">
+      {currentTab === "collect" ? (
+        <div className="grid gap-6 xl:grid-cols-[1.15fr,0.85fr]">
           <Card className="premium-panel overflow-hidden p-0">
             <div className="border-b border-slate-200/80 px-5 py-5 sm:px-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Collect for this unit</p>
                   <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Collect without the clutter</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Meter, payment, correction, and visit note stay together so the collector can finish the room in one pass.</p>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Meter, payment, correction, and visit note stay together, while history and setup live on their own tabs.</p>
                 </div>
-                <div className="rounded-3xl bg-slate-950 px-4 py-3 !text-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
+                <div className="surface-dark rounded-3xl px-4 py-3 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">Amount due</p>
                   <p className="mt-1 text-2xl font-semibold text-white">{money(totalDue)}</p>
                   <p className="mt-1 text-sm text-slate-300">Advance already accounted for</p>
@@ -146,38 +144,15 @@ export default async function RoomDetailPage({
               </div>
             </div>
 
-            <div className="px-5 py-5 sm:px-6">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-3xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Rent</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">{money(rentAmount)}</p>
-                </div>
-                <div className="rounded-3xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Water</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">{money(waterAmount)}</p>
-                </div>
-                <div className="rounded-3xl bg-slate-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Electricity</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">{money(electricityAmount)}</p>
-                  <p className="mt-1 text-xs text-slate-500">{currentCycle ? "Latest saved charge" : "Will calculate on save"}</p>
-                </div>
-                <div className="rounded-3xl bg-indigo-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500">Current number</p>
-                  <p className="mt-2 text-2xl font-semibold text-slate-950">{liveElectricityNumber}</p>
-                  <p className="mt-1 text-xs text-slate-600">Last saved baseline {lastSavedNumber}</p>
-                </div>
-              </div>
-            </div>
-
             {editMode && activeTenancy ? (
-              <form action={collectRoomAction} className="border-t border-slate-200/80 px-5 py-5 sm:px-6">
+              <form action={collectRoomAction} className="px-5 py-5 sm:px-6">
                 <input type="hidden" name="roomId" value={room.id} />
                 <input type="hidden" name="month" value={month} />
                 <input type="hidden" name="year" value={year} />
 
                 <div className="grid gap-6 lg:grid-cols-[1fr,1fr]">
                   <div className="space-y-4">
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                    <div className="surface-subtle rounded-3xl p-4">
                       <h3 className="text-base font-semibold text-slate-950">Live collection</h3>
                       <div className="mt-4 grid gap-4">
                         <Field label="Current electricity number" hint={`Last saved number: ${lastSavedNumber}`}>
@@ -189,12 +164,10 @@ export default async function RoomDetailPage({
                       </div>
                     </div>
 
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                    <div className="surface-subtle rounded-3xl p-4">
                       <h3 className="text-base font-semibold text-slate-950">Payment details</h3>
                       <div className="mt-4 grid gap-4 md:grid-cols-2">
-                        <Field label="Payment date">
-                          <BsDateInput name="paymentDate" defaultValue={new Date()} required />
-                        </Field>
+                        <Field label="Payment date"><BsDateInput name="paymentDate" defaultValue={new Date()} required /></Field>
                         <Field label="Payment mode">
                           <Select name="paymentMode" defaultValue="CASH">
                             <option value="CASH">Cash</option>
@@ -209,54 +182,92 @@ export default async function RoomDetailPage({
                   </div>
 
                   <div className="space-y-4">
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                    <div className="surface-subtle rounded-3xl p-4">
                       <h3 className="text-base font-semibold text-slate-950">Adjustments and notes</h3>
                       <div className="mt-4 grid gap-4">
                         <Field label="Extra charge or discount" hint="Use + for extra charge, - for discount or correction.">
                           <TextInput name="adjustmentAmount" type="number" step="0.01" defaultValue="0" />
                         </Field>
-                        <Field label="Reference">
-                          <TextInput name="referenceNote" placeholder="Txn id / short note" />
-                        </Field>
-                        <Field label="Visit note">
-                          <TextArea name="note" placeholder="Optional note for this visit" className="min-h-[104px]" />
-                        </Field>
+                        <Field label="Reference"><TextInput name="referenceNote" placeholder="Txn id / short note" /></Field>
+                        <Field label="Visit note"><TextArea name="note" placeholder="Optional note for this visit" className="min-h-[104px]" /></Field>
                       </div>
                     </div>
 
-                    <div className="rounded-3xl border border-slate-200 bg-slate-950 p-4 !text-white shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
+                    <div className="surface-dark rounded-3xl p-4 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.8)]">
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Primary action</p>
                       <p className="mt-2 text-lg font-semibold text-white">Save collection for this unit</p>
                       <p className="mt-2 text-sm leading-6 text-slate-300">Add payment to create a receipt immediately. Enter 0 to save the bill first and collect later.</p>
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                         <Button type="submit" variant="inverse" className="flex-1">Save collection</Button>
-                        <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-700 px-4 text-sm font-semibold !text-white transition hover:bg-slate-900 hover:!text-white">
-                          {nextRoomId ? "Skip to next room" : "Back to building"}
-                        </Link>
+                        <LinkButton href={nextRoomHref} variant="glass" className="flex-1">{nextRoomId ? "Skip to next room" : "Back to building"}</LinkButton>
                       </div>
                     </div>
                   </div>
                 </div>
               </form>
             ) : (
-              <div className="border-t border-slate-200/80 px-5 py-5 sm:px-6">
+              <div className="px-5 py-5 sm:px-6">
                 <EmptyState title="No active tenant or edit mode is off" text="You need an active tenant and edit mode to record collection." />
               </div>
             )}
           </Card>
 
+          <div className="space-y-6">
+            <Card className="listing-card">
+              <SectionTitle title="Collection snapshot" subtitle="The numbers you usually need before saving." />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="surface-subtle rounded-3xl p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Rent</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-950">{money(rentAmount)}</p>
+                </div>
+                <div className="surface-subtle rounded-3xl p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Water</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-950">{money(waterAmount)}</p>
+                </div>
+                <div className="surface-subtle rounded-3xl p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Electricity charge</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-950">{money(electricityAmount)}</p>
+                  <p className="mt-1 text-xs text-slate-500">{currentCycle ? "Latest saved charge" : "Will calculate on save"}</p>
+                </div>
+                <div className="surface-subtle rounded-3xl p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Current number</p>
+                  <p className="mt-2 text-2xl font-semibold text-slate-950">{liveElectricityNumber}</p>
+                  <p className="mt-1 text-xs text-slate-500">Baseline {lastSavedNumber}</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="listing-card">
+              <SectionTitle title="Resident snapshot" subtitle="Quick context without opening the management tab." />
+              {activeTenancy ? (
+                <div className="grid gap-4 text-sm sm:grid-cols-2">
+                  <div><span className="block text-xs uppercase tracking-wide text-slate-400">Resident</span><span className="text-slate-950">{activeTenancy.tenant.fullName}</span></div>
+                  <div><span className="block text-xs uppercase tracking-wide text-slate-400">Phone</span><span className="text-slate-950">{activeTenancy.tenant.phone || "—"}</span></div>
+                  <div><span className="block text-xs uppercase tracking-wide text-slate-400">Joined on</span><span className="text-slate-950">{shortDate(activeTenancy.startDate)}</span></div>
+                  <div><span className="block text-xs uppercase tracking-wide text-slate-400">Meter label</span><span className="text-slate-950">{room.meterLabel || "—"}</span></div>
+                </div>
+              ) : (
+                <EmptyState title="Vacant unit" text="Start a tenancy when a new resident moves in." />
+              )}
+            </Card>
+          </div>
+        </div>
+      ) : null}
+
+      {currentTab === "history" ? (
+        <div className="grid gap-6 xl:grid-cols-[0.95fr,1.05fr]">
           <Card className="listing-card">
             <SectionTitle title="Recent payments" subtitle="Latest payment activity for this unit." />
             <div className="space-y-3">
               {room.payments.length ? (
                 room.payments.map((payment) => (
-                  <div key={payment.id} className="rounded-3xl border border-slate-200 bg-white p-4">
+                  <div key={payment.id} className="surface-subtle rounded-3xl p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-950">{money(payment.amount)} · {payment.paymentMode.toLowerCase()}</p>
                         <p className="mt-1 text-sm text-slate-500">{bsDate(payment.paymentDate)}</p>
                       </div>
-                      {payment.receipt ? <Link href={`/receipts/${payment.receipt.id}`} className="text-sm font-semibold text-indigo-700">Receipt</Link> : null}
+                      {payment.receipt ? <LinkButton href={`/receipts/${payment.receipt.id}`} variant="secondary" className="h-10 px-3 text-xs">Receipt</LinkButton> : null}
                     </div>
                   </div>
                 ))
@@ -265,31 +276,13 @@ export default async function RoomDetailPage({
               )}
             </div>
           </Card>
-        </div>
-
-        <div className="space-y-6">
-          <Card className="listing-card">
-            <SectionTitle title="Resident snapshot" subtitle="Who is here and what baseline the unit currently follows." />
-            {activeTenancy ? (
-              <div className="grid gap-4 text-sm !text-slate-800 sm:grid-cols-2">
-                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Resident</span>{activeTenancy.tenant.fullName}</div>
-                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Phone</span>{activeTenancy.tenant.phone || "—"}</div>
-                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Joined on</span>{shortDate(activeTenancy.startDate)}</div>
-                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Meter label</span>{room.meterLabel || "—"}</div>
-                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Move-in number</span>{activeTenancy.startMeterReading}</div>
-                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Live number</span>{liveElectricityNumber}</div>
-              </div>
-            ) : (
-              <EmptyState title="Vacant unit" text="Start a tenancy when a new resident moves in." />
-            )}
-          </Card>
 
           <Card className="listing-card">
             <SectionTitle title="Monthly history" subtitle="Every saved month stays attached to the unit." />
             <div className="space-y-3">
               {room.billingCycles.length ? (
                 room.billingCycles.map((cycle) => (
-                  <div key={cycle.id} className="rounded-3xl border border-slate-200 bg-white p-4">
+                  <div key={cycle.id} className="surface-subtle rounded-3xl p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-950">{bsMonthLabelFromMonthYear(cycle.month, cycle.year)}</p>
@@ -304,9 +297,58 @@ export default async function RoomDetailPage({
               )}
             </div>
           </Card>
+        </div>
+      ) : null}
+
+      {currentTab === "resident" ? (
+        <div className="grid gap-6 xl:grid-cols-[0.9fr,1.1fr]">
+          <Card className="listing-card">
+            <SectionTitle title="Resident snapshot" subtitle="Who is here and what baseline the unit currently follows." />
+            {activeTenancy ? (
+              <div className="grid gap-4 text-sm sm:grid-cols-2">
+                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Resident</span><span className="text-slate-950">{activeTenancy.tenant.fullName}</span></div>
+                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Phone</span><span className="text-slate-950">{activeTenancy.tenant.phone || "—"}</span></div>
+                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Joined on</span><span className="text-slate-950">{shortDate(activeTenancy.startDate)}</span></div>
+                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Meter label</span><span className="text-slate-950">{room.meterLabel || "—"}</span></div>
+                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Move-in number</span><span className="text-slate-950">{activeTenancy.startMeterReading}</span></div>
+                <div><span className="block text-xs uppercase tracking-wide text-slate-400">Live number</span><span className="text-slate-950">{liveElectricityNumber}</span></div>
+              </div>
+            ) : (
+              <EmptyState title="Vacant unit" text="Start a tenancy when a new resident moves in." />
+            )}
+          </Card>
 
           <Card className="listing-card">
-            <SectionTitle title={activeTenancy ? "End tenancy" : "Start tenancy"} subtitle={activeTenancy ? "Mark the unit vacant when someone moves out." : "Attach a resident and initialize this unit from its real current state."} />
+            <SectionTitle title="Unit context" subtitle="A compact baseline for handling the room without jumping across screens." />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="surface-subtle rounded-3xl p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Status</p>
+                <p className="mt-2 text-xl font-semibold text-slate-950">{room.status}</p>
+              </div>
+              <div className="surface-subtle rounded-3xl p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Current due</p>
+                <p className="mt-2 text-xl font-semibold text-slate-950">{money(totalDue)}</p>
+              </div>
+              <div className="surface-subtle rounded-3xl p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Advance credit</p>
+                <p className="mt-2 text-xl font-semibold text-slate-950">{money(credit)}</p>
+              </div>
+              <div className="surface-subtle rounded-3xl p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Latest month</p>
+                <p className="mt-2 text-xl font-semibold text-slate-950">{currentCycle ? bsMonthLabelFromMonthYear(currentCycle.month, currentCycle.year) : "Not saved"}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      ) : null}
+
+      {currentTab === "manage" ? (
+        <div className="grid gap-6 xl:grid-cols-[1fr,0.78fr]">
+          <Card className="listing-card">
+            <SectionTitle
+              title={activeTenancy ? "End tenancy" : "Start tenancy"}
+              subtitle={activeTenancy ? "Mark the unit vacant when someone moves out." : "Attach a resident and initialize this unit from its real current state."}
+            />
             {editMode ? (
               activeTenancy ? (
                 <form action={endTenancyAction} className="space-y-3">
@@ -330,7 +372,7 @@ export default async function RoomDetailPage({
                     <Field label="Rent"><TextInput name="startRent" type="number" step="0.01" defaultValue={room.currentDefaultRent} required /></Field>
                     <Field label="Water"><TextInput name="startWater" type="number" step="0.01" defaultValue={room.currentDefaultWater} required /></Field>
                   </div>
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4">
+                  <div className="surface-subtle rounded-3xl p-4">
                     <h3 className="text-base font-semibold text-slate-950">Current starting point</h3>
                     <p className="mt-1 text-sm text-slate-500">Use the resident’s live situation today so the app can continue from the real state.</p>
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -356,17 +398,35 @@ export default async function RoomDetailPage({
             )}
           </Card>
 
-          {editMode ? (
+          <div className="space-y-6">
             <Card className="listing-card">
-              <SectionTitle title="Archive unit" subtitle="No hard delete. History stays intact." />
-              <form action={archiveRoomAction}>
-                <input type="hidden" name="roomId" value={room.id} />
-                <Button type="submit" variant="danger" className="w-full">Archive room</Button>
-              </form>
+              <SectionTitle title="Actions" subtitle="Destructive actions stay isolated here instead of living next to collection." />
+              {editMode ? (
+                <form action={archiveRoomAction}>
+                  <input type="hidden" name="roomId" value={room.id} />
+                  <Button type="submit" variant="danger" className="w-full">Archive room</Button>
+                </form>
+              ) : (
+                <EmptyState title="Edit mode is off" text="Turn on edit mode to archive or change tenancy state." />
+              )}
             </Card>
-          ) : null}
+
+            <Card className="listing-card">
+              <SectionTitle title="Quick context" subtitle="Still useful while you are changing the unit state." />
+              <div className="grid gap-3">
+                <div className="surface-subtle rounded-3xl p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Due now</p>
+                  <p className="mt-2 text-xl font-semibold text-slate-950">{money(totalDue)}</p>
+                </div>
+                <div className="surface-subtle rounded-3xl p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Current number</p>
+                  <p className="mt-2 text-xl font-semibold text-slate-950">{liveElectricityNumber}</p>
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

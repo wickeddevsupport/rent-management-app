@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createRoomAction } from "@/app/actions";
-import { Badge, Button, Card, EmptyState, Field, PageHeader, StatCard, TextArea, TextInput } from "@/components/ui";
+import { Badge, Button, Card, EmptyState, Field, LinkButton, PageHeader, SegmentedTabs, StatCard, TextArea, TextInput } from "@/components/ui";
 import { isEditMode } from "@/lib/auth";
 import { getPropertyDetail } from "@/lib/data";
 import { bsMonthLabelFromDate, money, shortDate } from "@/lib/format";
@@ -19,11 +18,19 @@ function roomStateLabel(room: PropertyRoom) {
   return { label: "Ready for collection", tone: "red" as const };
 }
 
-export default async function PropertyDetailPage({ params }: { params: Promise<{ propertyId: string }> }) {
+export default async function PropertyDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ propertyId: string }>;
+  searchParams: Promise<{ view?: string }>;
+}) {
   const { propertyId } = await params;
+  const query = await searchParams;
   const property = await getPropertyDetail(propertyId);
   if (!property) notFound();
   const editMode = await isEditMode();
+  const view = query.view === "sheet" ? "sheet" : "cards";
 
   const occupied = property.rooms.filter((room) => room.status === "OCCUPIED").length;
   const totalDue = property.rooms.reduce((sum, room) => sum + room.totalDue, 0);
@@ -69,15 +76,19 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
 
       <PageHeader
         title="Units"
-        subtitle="A cleaner building view for occupancy, due amounts, readings, and current resident state."
+        subtitle="Two clear views: card view for quick scanning, sheet view for denser handling without endless vertical scrolling."
         action={
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Link href={`/properties/${property.id}/meter-round`} className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-950/90 bg-slate-950 px-4 text-sm font-semibold !text-white transition hover:bg-slate-800 hover:!text-white">
-              Meter round
-            </Link>
-            <Link href="/properties" className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold !text-slate-900 transition hover:bg-slate-50 hover:!text-slate-900">
-              Back to portfolio
-            </Link>
+          <div className="flex w-full flex-col gap-3 xl:w-auto xl:flex-row xl:items-center">
+            <SegmentedTabs
+              tabs={[
+                { label: "Cards", href: `/properties/${property.id}?view=cards`, active: view === "cards" },
+                { label: "Sheet", href: `/properties/${property.id}?view=sheet`, active: view === "sheet" },
+              ]}
+            />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <LinkButton href={`/properties/${property.id}/meter-round`} variant="primary">Meter round</LinkButton>
+              <LinkButton href="/properties" variant="secondary">Back to portfolio</LinkButton>
+            </div>
           </div>
         }
       />
@@ -89,62 +100,118 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         <StatCard label="Collected" value={money(collected)} tone="success" />
       </section>
 
-      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-        {property.rooms.length ? (
-          property.rooms.map((room) => {
-            const state = roomStateLabel(room);
-            return (
-              <Link key={room.id} href={`/rooms/${room.id}`} className="group block">
-                <article className="unit-card rounded-[32px] p-5 transition duration-200 group-hover:-translate-y-0.5 sm:p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Unit</p>
-                      <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Room {room.roomNumber}</h3>
-                      <p className="mt-2 text-sm text-slate-500">{room.activeTenancy?.tenant.fullName || "Vacant right now"}</p>
+      {view === "cards" ? (
+        <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+          {property.rooms.length ? (
+            property.rooms.map((room) => {
+              const state = roomStateLabel(room);
+              return (
+                <a key={room.id} href={`/rooms/${room.id}`} className="group block">
+                  <article className="unit-card rounded-[32px] p-5 transition duration-200 group-hover:-translate-y-0.5 sm:p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">Unit</p>
+                        <h3 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">Room {room.roomNumber}</h3>
+                        <p className="mt-2 text-sm text-slate-500">{room.activeTenancy?.tenant.fullName || "Vacant right now"}</p>
+                      </div>
+                      <Badge tone={state.tone}>{state.label}</Badge>
                     </div>
-                    <Badge tone={state.tone}>{state.label}</Badge>
-                  </div>
 
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <div className="rounded-3xl bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Due now</p>
-                      <p className="mt-2 text-lg font-semibold text-slate-950">{money(room.totalDue)}</p>
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                      <div className="surface-subtle rounded-3xl p-4">
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Due now</p>
+                        <p className="mt-2 text-lg font-semibold text-slate-950">{money(room.totalDue)}</p>
+                      </div>
+                      <div className="surface-subtle rounded-3xl p-4">
+                        <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Rent + water</p>
+                        <p className="mt-2 text-lg font-semibold text-slate-950">{money(room.currentDefaultRent + room.currentDefaultWater)}</p>
+                      </div>
                     </div>
-                    <div className="rounded-3xl bg-slate-50 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Rent + water</p>
-                      <p className="mt-2 text-lg font-semibold text-slate-950">{money(room.currentDefaultRent + room.currentDefaultWater)}</p>
-                    </div>
-                  </div>
 
-                  <div className="mt-5 rounded-3xl border border-slate-200/80 bg-white/70 p-4 text-sm text-slate-600">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-slate-500">Electricity number</span>
-                      <span className="font-medium text-slate-900">{room.currentCycle ? `${room.currentCycle.previousMeterReading} → ${room.currentCycle.currentMeterReading}` : "Not entered"}</span>
+                    <div className="surface-inset mt-5 rounded-3xl p-4 text-sm text-slate-600">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Electricity number</span>
+                        <span className="font-medium text-slate-900">{room.currentCycle ? `${room.currentCycle.previousMeterReading} → ${room.currentCycle.currentMeterReading}` : "Not entered"}</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Last payment</span>
+                        <span className="font-medium text-slate-900">{room.latestPayment ? shortDate(room.latestPayment.paymentDate) : "—"}</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <span className="text-slate-500">Status</span>
+                        <span className="font-medium uppercase tracking-[0.12em] text-slate-900">{room.status}</span>
+                      </div>
                     </div>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span className="text-slate-500">Last payment</span>
-                      <span className="font-medium text-slate-900">{room.latestPayment ? shortDate(room.latestPayment.paymentDate) : "—"}</span>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between gap-3">
-                      <span className="text-slate-500">Status</span>
-                      <span className="font-medium uppercase tracking-[0.12em] text-slate-900">{room.status}</span>
-                    </div>
-                  </div>
 
-                  <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm">
-                    <span className="text-slate-500">Open unit</span>
-                    <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-950 transition group-hover:border-slate-300">View room</span>
-                  </div>
-                </article>
-              </Link>
-            );
-          })
-        ) : (
-          <div className="md:col-span-2 2xl:col-span-3">
-            <EmptyState title="No rooms yet" text="Create the first room for this property in edit mode." />
-          </div>
-        )}
-      </div>
+                    <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-200 pt-4 text-sm">
+                      <span className="text-slate-500">Open unit</span>
+                      <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-950 transition group-hover:border-slate-300">View room</span>
+                    </div>
+                  </article>
+                </a>
+              );
+            })
+          ) : (
+            <div className="md:col-span-2 2xl:col-span-3">
+              <EmptyState title="No rooms yet" text="Create the first room for this property in edit mode." />
+            </div>
+          )}
+        </div>
+      ) : (
+        <Card className="listing-card overflow-hidden p-0">
+          {property.rooms.length ? (
+            <div className="overflow-x-auto">
+              <table className="data-table min-w-[960px]">
+                <thead>
+                  <tr>
+                    <th>Unit</th>
+                    <th>Resident</th>
+                    <th>Status</th>
+                    <th>Due now</th>
+                    <th>Number</th>
+                    <th>Last payment</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {property.rooms.map((room) => {
+                    const state = roomStateLabel(room);
+                    return (
+                      <tr key={room.id}>
+                        <td>
+                          <div>
+                            <p className="font-semibold text-slate-950">Room {room.roomNumber}</p>
+                            <p className="mt-1 text-sm text-slate-500">{room.roomLabel || room.status.toLowerCase()}</p>
+                          </div>
+                        </td>
+                        <td>
+                          <div>
+                            <p className="font-medium text-slate-950">{room.activeTenancy?.tenant.fullName || "Vacant"}</p>
+                            <p className="mt-1 text-sm text-slate-500">{room.activeTenancy?.tenant.phone || "No phone"}</p>
+                          </div>
+                        </td>
+                        <td><Badge tone={state.tone}>{state.label}</Badge></td>
+                        <td className="font-semibold text-slate-950">{money(room.totalDue)}</td>
+                        <td>{room.currentCycle ? `${room.currentCycle.previousMeterReading} → ${room.currentCycle.currentMeterReading}` : "Not entered"}</td>
+                        <td>{room.latestPayment ? shortDate(room.latestPayment.paymentDate) : "—"}</td>
+                        <td>
+                          <LinkButton href={`/rooms/${room.id}`} variant={room.totalDue > 0 ? "primary" : "secondary"} className="h-10 px-3 text-xs">
+                            Open room
+                          </LinkButton>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-5">
+              <EmptyState title="No rooms yet" text="Create the first room for this property in edit mode." />
+            </div>
+          )}
+        </Card>
+      )}
 
       {editMode ? (
         <Card className="listing-card rounded-[32px] p-6 sm:p-7">

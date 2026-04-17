@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Badge, Card, PageHeader } from "@/components/ui";
+import { Badge, Card, LinkButton, PageHeader } from "@/components/ui";
 import { getReceiptById } from "@/lib/data";
 import { money, shortDate } from "@/lib/format";
 
@@ -15,7 +14,11 @@ export default async function ReceiptPage({ params }: { params: Promise<{ receip
 
   return (
     <div className="space-y-6">
-      <PageHeader title={`Receipt ${receipt.receiptNumber}`} subtitle="A cleaner receipt surface you can screenshot or share directly from the phone." action={<Link href={`/rooms/${payment.roomId}`} className="text-sm font-medium text-indigo-600">Back to room</Link>} />
+      <PageHeader
+        title={`Receipt ${receipt.receiptNumber}`}
+        subtitle="A cleaner receipt surface for phone sharing, screenshots, and quick verification."
+        action={<LinkButton href={`/rooms/${payment.roomId}`} variant="secondary">Back to room</LinkButton>}
+      />
 
       <Card className="listing-card mx-auto max-w-3xl overflow-hidden p-0">
         <div className="listing-cover px-6 py-6 text-white sm:px-8">
@@ -39,7 +42,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ receip
             <div><span className="block text-xs uppercase tracking-wide text-slate-400">Recorded by</span>{payment.enteredByUser.name}</div>
           </div>
 
-          <div className="mt-6 rounded-[28px] bg-slate-50 p-5 text-sm text-slate-600">
+          <div className="surface-subtle mt-6 rounded-[28px] p-5 text-sm text-slate-600">
             <p className="font-medium text-slate-900">Share link</p>
             <p className="mt-2 break-all">{shareUrl}</p>
             <p className="mt-2 text-xs text-slate-500">Open this on mobile or send it through WhatsApp, Telegram, Messenger, or any chat.</p>

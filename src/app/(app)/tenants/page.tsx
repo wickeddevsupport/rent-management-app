@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Badge, Card, EmptyState, PageHeader } from "@/components/ui";
+import { Badge, Card, EmptyState, LinkButton, PageHeader } from "@/components/ui";
 import { getTenantsDirectory } from "@/lib/data";
 import { shortDate } from "@/lib/format";
 
@@ -10,21 +9,21 @@ export default async function TenantsPage() {
 
   return (
     <div className="space-y-6">
-      <section className="listing-hero overflow-hidden rounded-[32px] p-6 text-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.8)] sm:p-8">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+      <section className="listing-hero overflow-hidden rounded-[36px] p-6 text-white sm:p-8 lg:p-10">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">Residents directory</p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">People should feel like residents, not raw records.</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-200 sm:text-base">A cleaner directory of who is staying where, when they joined, and how to jump back into the unit.</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white sm:text-4xl">Residents should feel like people attached to real units, not raw records.</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">Cleaner cards, clearer occupancy state, and direct jump-back into the live unit.</p>
           </div>
-          <div className="rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+          <div className="rounded-[28px] border border-white/10 bg-white/8 p-4 backdrop-blur">
             <p className="text-xs uppercase tracking-[0.18em] text-slate-300">Residents</p>
             <p className="mt-2 text-2xl font-semibold text-white">{tenants.length}</p>
           </div>
         </div>
       </section>
 
-      <PageHeader title="Residents" subtitle="Current and past occupancy, linked back to their live unit." />
+      <PageHeader title="Residents" subtitle="Current and past occupancy, linked back to the active room without the old admin-panel feel." />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {tenants.length ? tenants.map((tenant) => {
@@ -40,13 +39,15 @@ export default async function TenantsPage() {
                 <Badge tone={latest?.isActive ? "green" : "neutral"}>{latest?.isActive ? "Active" : "History"}</Badge>
               </div>
               {latest ? (
-                <div className="mt-5 rounded-3xl bg-slate-50 p-4 text-sm text-slate-600">
+                <div className="surface-subtle mt-5 rounded-3xl p-4 text-sm text-slate-600">
                   <p className="font-medium text-slate-900">Latest stay</p>
                   <p className="mt-2">{latest.room.property.name} · Room {latest.room.roomNumber}</p>
                   <p className="mt-1">{shortDate(latest.startDate)} → {latest.endDate ? shortDate(latest.endDate) : "Present"}</p>
-                  <Link href={`/rooms/${latest.room.id}`} className="mt-4 inline-flex rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
-                    Open unit
-                  </Link>
+                  <div className="mt-4">
+                    <LinkButton href={`/rooms/${latest.room.id}`} variant="primary" className="h-10 px-4 text-xs">
+                      Open unit
+                    </LinkButton>
+                  </div>
                 </div>
               ) : null}
             </Card>
