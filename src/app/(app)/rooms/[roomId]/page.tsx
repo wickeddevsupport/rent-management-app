@@ -90,10 +90,10 @@ export default async function RoomDetailPage({
         subtitle="This room now behaves more like a real unit detail: resident, utility baseline, amount due, and one dominant collection action."
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Link href={`/properties/${room.propertyId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold !text-slate-800 transition hover:bg-slate-50">
+            <Link href={`/properties/${room.propertyId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold !text-slate-800 transition hover:bg-slate-50 hover:!text-slate-800">
               Back to units
             </Link>
-            <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-semibold !text-white transition hover:bg-slate-800">
+            <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-semibold !text-white transition hover:bg-slate-800 hover:!text-white">
               {nextRoomId ? "Next room" : "Back to building"}
             </Link>
           </div>
@@ -109,11 +109,11 @@ export default async function RoomDetailPage({
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               {query.receiptId ? (
-                <Link href={`/receipts/${query.receiptId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-emerald-200 bg-white px-4 text-sm font-semibold !text-emerald-900 transition hover:bg-emerald-100">
+                <Link href={`/receipts/${query.receiptId}`} className="inline-flex h-12 items-center justify-center rounded-2xl border border-emerald-200 bg-white px-4 text-sm font-semibold !text-emerald-900 transition hover:bg-emerald-100 hover:!text-emerald-900">
                   Open receipt
                 </Link>
               ) : null}
-              <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-700 px-4 text-sm font-semibold !text-white transition hover:bg-emerald-600">
+              <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-700 px-4 text-sm font-semibold !text-white transition hover:bg-emerald-600 hover:!text-white">
                 {nextRoomId ? "Continue to next room" : "Back to building"}
               </Link>
             </div>
@@ -230,7 +230,7 @@ export default async function RoomDetailPage({
                       <p className="mt-2 text-sm leading-6 text-slate-300">If payment is entered, a receipt is created immediately. If amount is 0, only the bill is saved.</p>
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                         <Button type="submit" className="flex-1 bg-white !text-slate-950 hover:bg-slate-100">Save collection</Button>
-                        <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-700 px-4 text-sm font-semibold !text-white transition hover:bg-slate-900">
+                        <Link href={nextRoomHref} className="inline-flex h-12 items-center justify-center rounded-2xl border border-slate-700 px-4 text-sm font-semibold !text-white transition hover:bg-slate-900 hover:!text-white">
                           {nextRoomId ? "Skip to next room" : "Back to building"}
                         </Link>
                       </div>

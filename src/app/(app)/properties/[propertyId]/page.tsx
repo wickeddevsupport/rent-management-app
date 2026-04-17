@@ -72,10 +72,10 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
         subtitle="See the building like a real unit list: occupancy, resident, due amount, and latest movement all at a glance."
         action={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Link href={`/properties/${property.id}/meter-round`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-medium !text-white transition hover:bg-slate-800">
+            <Link href={`/properties/${property.id}/meter-round`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-950 px-4 text-sm font-medium !text-white transition hover:bg-slate-800 hover:!text-white">
               Meter round
             </Link>
-            <Link href="/properties" className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium !text-slate-800 transition hover:bg-slate-200">
+            <Link href="/properties" className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium !text-slate-800 transition hover:bg-slate-200 hover:!text-slate-800">
               Back to portfolio
             </Link>
           </div>

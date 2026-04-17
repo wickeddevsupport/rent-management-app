@@ -48,7 +48,7 @@ export default async function MeterRoundPage({ params }: { params: Promise<{ pro
       <PageHeader
         title="Fast reading entry"
         subtitle="This view is built for speed: room identity, previous number, current number, save. Nothing noisy."
-        action={<Link href={`/properties/${property.id}`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium !text-slate-800 transition hover:bg-slate-200">Back to building</Link>}
+        action={<Link href={`/properties/${property.id}`} className="inline-flex h-11 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-medium !text-slate-800 transition hover:bg-slate-200 hover:!text-slate-800">Back to building</Link>}
       />
 
       <div className="grid gap-4 xl:grid-cols-2">
@@ -93,7 +93,7 @@ export default async function MeterRoundPage({ params }: { params: Promise<{ pro
 
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <Button type="submit" className="flex-1">Save reading</Button>
-                    <Link href={`/rooms/${room.id}`} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-semibold !text-slate-800 transition hover:bg-slate-200">
+                    <Link href={`/rooms/${room.id}`} className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-4 text-sm font-semibold !text-slate-800 transition hover:bg-slate-200 hover:!text-slate-800">
                       Open unit
                     </Link>
                   </div>
