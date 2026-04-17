@@ -15,6 +15,18 @@ function toNumber(value: FormDataEntryValue | null, fallback = 0) {
   return Number.isFinite(num) ? num : fallback;
 }
 
+function requireNumber(value: FormDataEntryValue | null, fieldName: string) {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    throw new Error(`${fieldName} is required`);
+  }
+  const num = Number(text);
+  if (!Number.isFinite(num)) {
+    throw new Error(`${fieldName} must be a valid number`);
+  }
+  return num;
+}
+
 function toDate(value: FormDataEntryValue | null, fallback = new Date()) {
   const text = String(value ?? "").trim();
   if (!text) return fallback;
@@ -300,6 +312,7 @@ export async function startTenancyAction(formData: FormData) {
   const roomId = String(formData.get("roomId") || "");
   const room = await db.room.findUnique({ where: { id: roomId }, include: { tenancies: { where: { isActive: true } } } });
   if (!room || room.tenancies.length) redirect(`/rooms/${roomId}`);
+  const startMeterReading = requireNumber(formData.get("startMeterReading"), "Starting meter reading");
 
   const tenant = await db.tenant.create({
     data: {
@@ -319,7 +332,7 @@ export async function startTenancyAction(formData: FormData) {
       startDate: toDate(formData.get("startDate")),
       startRent: toNumber(formData.get("startRent"), room.currentDefaultRent),
       startWater: toNumber(formData.get("startWater"), room.currentDefaultWater),
-      startMeterReading: toNumber(formData.get("startMeterReading")),
+      startMeterReading,
       moveInNotes: String(formData.get("moveInNotes") || "").trim() || null,
       isActive: true,
     },

@@ -119,7 +119,9 @@ export default async function RoomDetailPage({
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2">
-                  <Field label="Manual adjustment"><TextInput name="adjustmentAmount" type="number" step="0.01" defaultValue="0" /></Field>
+                  <Field label="Extra charge or discount" hint="Use + for extra charge, - for discount or correction.">
+                    <TextInput name="adjustmentAmount" type="number" step="0.01" defaultValue="0" />
+                  </Field>
                   <Field label="Reference"><TextInput name="referenceNote" placeholder="Txn id / note" /></Field>
                 </div>
 
@@ -238,7 +240,9 @@ export default async function RoomDetailPage({
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     <Field label="Start date"><TextInput name="startDate" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></Field>
-                    <Field label="Starting meter"><TextInput name="startMeterReading" type="number" step="0.01" defaultValue="0" /></Field>
+                    <Field label="Meter reading at move-in" hint="Enter the live meter reading when the tenant enters.">
+                      <TextInput name="startMeterReading" type="number" step="0.01" required />
+                    </Field>
                   </div>
                   <Field label="Move in note"><TextArea name="moveInNotes" placeholder="Optional move-in note" /></Field>
                   <Field label="Tenant note"><TextArea name="tenantNotes" placeholder="Optional note about this tenant" /></Field>
